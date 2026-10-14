@@ -1,69 +1,116 @@
 "use client";
 
 /**
- * 대시보드 › 타임라인 요약 — 시간축 하나에 다가오는 마일스톤(위) · 지금 · 어제·오늘 한 일(아래).
- * 둘 다 운영 › 타임라인으로 이어지므로 카드 하나로 합쳤다.
+ * 홈 › 타임라인 띠 — 가로 한 줄: 지난 일 · 지금 · 다가오는 마일스톤.
+ * 사건이 많으면 띠를 잡고 좌우로 끌어 넘긴다(트랙패드 가로 스크롤도). 처음엔 "지금" 이후는 하나만 보인다.
+ * 아래 승인 목록이 전체 폭을 쓰도록 얇게. → 는 운영 › 타임라인 페이지.
+ * 사건은 알림이 아니라 실제 기록(업무 진행 · 문서 버전 · 리스크 감지) — activity.ts
  */
 
 import Link from "next/link";
-import { Button, Icon } from "@/components/ctas/ctds";
-import { MilestoneBadge, Section } from "@/components/ctas/ui";
-import { NOTIFICATION_ICON, daysUntil, fmtDate, getProject, milestones, notifications } from "@/lib/mock";
+import { useEffect, useRef, useState } from "react";
+import { Icon } from "@/components/ctas/ctds";
+import { daysUntil, fmtDate, milestones } from "@/lib/mock";
+import { activities } from "./activity";
 import styles from "./TimelineSummary.module.css";
 
 const dday = (iso: string) => {
   const d = daysUntil(iso);
-  return d < 0 ? `${-d}일 지남` : d === 0 ? "오늘" : `D-${d}`;
+  return d < 0 ? `+${-d}` : d === 0 ? "오늘" : `D-${d}`;
 };
 const when = (iso: string) => {
   const d = daysUntil(iso.slice(0, 10));
-  return `${d === 0 ? "오늘" : d === -1 ? "어제" : fmtDate(iso)} ${iso.slice(11, 16)}`;
+  const time = iso.slice(11, 16); // 날짜만 있는 기록은 시각이 없다
+  return d === 0 ? time || "오늘" : d === -1 ? `어제 ${time}`.trim() : fmtDate(iso);
 };
 
-export function TimelineSummary({ ahead = 3, behind = 5 }: { ahead?: number; behind?: number }) {
-  // 다가오는 것 — 끝나지 않은 마일스톤, 먼 것이 위로 오도록(시간축이 위=미래)
-  const upcoming = milestones
-    .filter((m) => m.state !== "done")
-    .sort((a, b) => a.due.localeCompare(b.due))
-    .slice(0, ahead)
-    .reverse();
-  // 지난 일 — 최근 활동부터
-  const recent = [...notifications].sort((a, b) => b.at.localeCompare(a.at)).slice(0, behind);
+/** 이만큼 넘게 움직이면 클릭이 아니라 끌기 */
+const DRAG_THRESHOLD = 5;
+
+export function TimelineSummary({ ahead = 6, behind = 10 }: { ahead?: number; behind?: number }) {
+  // 지난 일 — 오래된 것 → 최근 순으로 왼쪽에서 "지금" 쪽으로
+  const recent = activities().slice(0, behind).reverse();
+  // 다가오는 것 — 가까운 것부터 "지금" 오른쪽으로
+  const upcoming = milestones.filter((m) => m.state !== "done").sort((a, b) => a.due.localeCompare(b.due)).slice(0, ahead);
+
+  const trackRef = useRef<HTMLOListElement>(null);
+  const nowRef = useRef<HTMLLIElement>(null);
+  const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
+  const justDragged = useRef(false);
+  const [dragging, setDragging] = useState(false);
+
+  // 처음엔 "지금" 오른쪽에 다가오는 일 하나만 보이게 — 나머지 화면은 지난 일. 더 먼 일정은 끌어서
+  useEffect(() => {
+    const track = trackRef.current;
+    const now = nowRef.current;
+    if (!track || !now) return;
+    const next = now.nextElementSibling as HTMLElement | null;
+    const end = now.offsetLeft + now.offsetWidth + (next?.offsetWidth ?? 0);
+    track.scrollLeft = Math.max(0, end - track.clientWidth);
+  }, []);
+
+  const onPointerDown = (e: React.PointerEvent<HTMLOListElement>) => {
+    if (e.pointerType !== "mouse" || e.button !== 0) return; // 터치는 기본 스크롤에 맡긴다
+    drag.current = { x: e.clientX, left: e.currentTarget.scrollLeft, moved: false };
+  };
+  const onPointerMove = (e: React.PointerEvent<HTMLOListElement>) => {
+    const d = drag.current;
+    if (!d) return;
+    const dx = e.clientX - d.x;
+    if (!d.moved && Math.abs(dx) > DRAG_THRESHOLD) {
+      d.moved = true;
+      setDragging(true);
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+    if (d.moved) e.currentTarget.scrollLeft = d.left - dx;
+  };
+  const endDrag = () => {
+    // pointerup 다음에 오는 click 을 막아야 하므로, 끌었다면 이번 틱 동안만 표시를 남긴다
+    if (drag.current?.moved) {
+      justDragged.current = true;
+      setTimeout(() => { justDragged.current = false; }, 0);
+    }
+    drag.current = null;
+    setDragging(false);
+  };
+  // 끌고 난 직후의 클릭은 링크로 보내지 않는다
+  const onClickCapture = (e: React.MouseEvent) => {
+    if (justDragged.current) { e.preventDefault(); e.stopPropagation(); }
+  };
 
   return (
-    <Section title="타임라인" icon="line-segments" hint="다가오는 일 · 지난 일" actions={<Button size="xs" variant="ghost" asChild><Link href="/ops/milestones">타임라인</Link></Button>}>
-      <ol className={styles.axis}>
-        {upcoming.map((m) => (
-          <li key={m.id} className={styles.item} data-side="ahead">
-            <Link href="/ops/milestones" className={styles.row}>
-              <span className={styles.when}>{dday(m.due)}</span>
-              <span className={styles.dot} aria-hidden />
-              <span className={styles.body}>
-                <span className={styles.title}><MilestoneBadge state={m.state} />{m.title}</span>
-                <span className={styles.sub}>{getProject(m.projectId)?.name} · {fmtDate(m.due)}</span>
-              </span>
+    <section className={styles.strip} aria-label="타임라인 요약">
+      <ol
+        ref={trackRef}
+        className={styles.track}
+        data-dragging={dragging || undefined}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onClickCapture={onClickCapture}
+      >
+        {recent.map((n) => (
+          <li key={n.id} className={styles.item} data-side="behind">
+            <Link href={n.href} className={styles.link} title={`${n.title} — ${n.sub}`} draggable={false}>
+              <span className={styles.when}><Icon name={n.icon} size={12} />{when(n.at)}</span>
+              <span className={styles.title}>{n.title}</span>
             </Link>
           </li>
         ))}
-
-        <li className={styles.now} aria-label="지금">
-          <span className={styles.when}>지금</span>
-          <span className={styles.nowLine} aria-hidden />
-        </li>
-
-        {recent.map((n) => (
-          <li key={n.id} className={styles.item} data-side="behind">
-            <Link href={n.href} className={styles.row}>
-              <span className={styles.when}>{when(n.at)}</span>
-              <span className={styles.dot} aria-hidden><Icon name={NOTIFICATION_ICON[n.kind]} size={12} /></span>
-              <span className={styles.body}>
-                <span className={styles.title}>{n.title}</span>
-                <span className={styles.sub}>{n.body}</span>
-              </span>
+        <li ref={nowRef} className={styles.now} aria-label="지금"><span>지금</span></li>
+        {upcoming.map((m) => (
+          <li key={m.id} className={styles.item} data-side="ahead">
+            <Link href="/ops/milestones" className={styles.link} title={`${m.title} — ${fmtDate(m.due)}`} draggable={false}>
+              <span className={styles.when}>{dday(m.due)}</span>
+              <span className={styles.title}>{m.title}</span>
             </Link>
           </li>
         ))}
       </ol>
-    </Section>
+      <Link href="/ops/milestones" className={styles.more} aria-label="타임라인 페이지로" title="운영 › 타임라인">
+        <Icon name="arrow-right" size={14} />
+      </Link>
+    </section>
   );
 }

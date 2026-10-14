@@ -42,7 +42,6 @@ import { usePreview } from "@/lib/preview-state";
 import { AiPanel } from "./AiPanel";
 import { DocPeek } from "./DocPeek";
 import { DocTree } from "./DocTree";
-import { useAllApprovals } from "./useApprovals";
 import { PreviewPane } from "./PreviewPane";
 import styles from "./AppShell.module.css";
 
@@ -60,8 +59,8 @@ const AREAS: { id: Area; icon: IconName; label: string; home: string }[] = [
 /** 라우트 → 영역 */
 function areaFor(pathname: string): Area {
   const seg = pathname.split("/").filter(Boolean);
-  // 승인 목록·투두는 대시보드 소속 — "대시보드만 봐도 된다". 운영은 비즈니스, 개발은 엔지니어 영역
-  if (seg.length === 0 || seg[0] === "approvals" || seg[0] === "todo") return "dashboard";
+  // 승인 목록은 홈(대시보드) 그 자체 — "홈만 봐도 된다". 운영은 비즈니스, 개발은 엔지니어 영역 (/approvals 는 홈으로 넘김)
+  if (seg.length === 0 || seg[0] === "approvals") return "dashboard";
   if (seg[0] === "ops") return "ops";
   if (seg[0] === "knowledge") return "knowledge";
   if (seg[0] === "dev") return "dev";
@@ -112,8 +111,6 @@ function Crumbs() {
     }
   } else if (seg[0] === "approvals") {
     crumbs.push({ label: "대시보드", href: "/" }, { label: "승인 목록" });
-  } else if (seg[0] === "todo") {
-    crumbs.push({ label: "대시보드", href: "/" }, { label: "투두" });
   } else if (seg[0] === "ops") {
     crumbs.push({ label: "운영", href: "/projects" });
     const sub: Record<string, string> = { milestones: "타임라인", resources: "리소스", insights: "인사이트" };
@@ -193,8 +190,6 @@ function ShellSidebar() {
   }
 
   const pid = projectId;
-  // 목업 승인 + 문서 draft — 승인 목록과 같은 숫자
-  const pendingApprovals = useAllApprovals().pending.length;
   const blockedTasks = byProject.tasks(pid).filter((t) => t.state === "blocked").length;
 
   const is = (href: string) => pathname === href || pathname === href + "/";
@@ -213,14 +208,8 @@ function ShellSidebar() {
   );
 
   const panels: Record<Area, ReactNode> = {
-    // 대시보드 = "여기만 봐도 된다" — 개요 · 승인 목록 · 투두
-    dashboard: (
-      <Sidebar.Section>
-        {item("/", "house", "개요", { exact: true })}
-        {item("/approvals", "check-circle", "승인 목록", { count: pendingApprovals })}
-        {item("/todo", "check-square", "투두")}
-      </Sidebar.Section>
-    ),
+    // 대시보드 = 홈 한 화면(승인 목록 + 타임라인)이라 사이드 메뉴가 없다 (hasPanel)
+    dashboard: null,
     // 운영 = 전 프로젝트·팀원 리소스를 한눈에. 프로젝트별 세부(단계·리스크·설정)는 상세 페이지에서.
     ops: (
       <>

@@ -1,6 +1,33 @@
 /* 상태 — 헤더 오른쪽 세그먼트 */
+/* 홈에 들어가는 보드 — 머리(제목 + 상태 탭) · 유형 칩 · 표 */
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.boardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.boardTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--fg-strong);
+}
+
 .stateTabs {
   width: 22rem;
+  max-width: 100%;
 }
 
 /* 유형 — 그룹 칩 + 세부 유형 드롭다운 */

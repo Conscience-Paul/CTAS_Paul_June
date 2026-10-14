@@ -274,14 +274,14 @@ export default function ProjectOverview() {
           description={<Subtle>{project.name} · 승인 대기</Subtle>}
           footer={
             <Button variant="outline" rightIcon={<Icon name="arrow-right" />} asChild>
-              <Link href="/approvals">승인 목록에서 모두 보기</Link>
+              <Link href="/">승인 목록에서 모두 보기</Link>
             </Button>
           }
         >
           <ul className={styles.kindList}>
             {kindItems.map((a) => (
               <li key={a.id}>
-                <Link href={`/approvals?open=${encodeURIComponent(a.id)}`} className={styles.kindItem}>
+                <Link href={`/?open=${encodeURIComponent(a.id)}`} className={styles.kindItem}>
                   <span className={styles.kindItemHead}>
                     {sevOf(a) && <SeverityBadge severity={sevOf(a)!} />}
                     <strong>{a.title}</strong>

@@ -1,23 +1,24 @@
 "use client";
 
 /**
- * 대시보드 — "지금 무슨 일이 있는지" 한 화면에. 결정할 것의 상세는 승인 목록에서.
- *  - 승인 대기: 총 건수 + 개발·문서·리스크·기타, 최근 3건 → 승인 목록
- *  - 타임라인: 다가오는 마일스톤 · 지금 · 어제·오늘 한 일을 시간축 하나로 → 운영 › 타임라인
- * 리스크는 승인(리스크 대응)으로 합쳐 별도 카드 없음. 운영 현황 차트는 운영 › 인사이트.
+ * 홈(대시보드) — "여기만 봐도 된다". 사이드바 없이 한 화면:
+ *  - 위: 타임라인 띠 — 지난 일 · 지금 · 다가오는 마일스톤 (끌어서 넘김, → 는 오늘의 타임라인 드로어)
+ *  - 아래(전체 폭): 승인 목록 그 자체 — 탭·유형 필터·종류별 서랍·바로 승인 (예전 /approvals)
+ * 막힌 업무는 원인 리스크가 "리스크 대응"으로 승인 목록에 올라오므로 따로 경고하지 않는다.
+ * 결정은 여기, 실행(내 업무)은 개발 › 업무, 운영 현황 차트는 운영 › 인사이트.
  */
 
 import { Button, Icon } from "@/components/ctas/ctds";
 import { Page, PageHeader } from "@/components/ctas/ui";
-import { ApprovalSummary } from "@/components/ctas/ApprovalSummary";
+import { ApprovalsBoard } from "@/app/approvals/_board";
 import { TimelineSummary } from "@/components/ctas/TimelineSummary";
 import { usePreview } from "@/lib/preview-state";
 
-export default function Dashboard() {
+export default function Home() {
   const { askAi } = usePreview();
 
   return (
-    <Page>
+    <Page wide>
       <PageHeader
         eyebrow={<>2026년 10월 13일 (월)</>}
         title="대시보드"
@@ -28,8 +29,9 @@ export default function Dashboard() {
         }
       />
 
-      <ApprovalSummary />
+      {/* 타임라인은 얇은 띠 하나, 승인 목록은 전체 폭 */}
       <TimelineSummary />
+      <ApprovalsBoard />
     </Page>
   );
 }

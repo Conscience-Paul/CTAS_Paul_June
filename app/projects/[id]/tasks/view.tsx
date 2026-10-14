@@ -317,7 +317,7 @@ export default function TasksPage() {
             ))}
           </List>
           <Subtle>
-            군집 판정은 접수 즉시 자동. 판정 대기 건만 사람이 결정합니다. 자세한 흐름은 <Link href="/approvals">승인 대기</Link>에서.
+            군집 판정은 접수 즉시 자동. 판정 대기 건만 사람이 결정합니다. 자세한 흐름은 <Link href="/">승인 대기</Link>에서.
           </Subtle>
         </Tabs.Panel>
       </Tabs>

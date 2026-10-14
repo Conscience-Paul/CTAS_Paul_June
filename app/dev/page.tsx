@@ -92,7 +92,7 @@ export default function DevListPage() {
       </div>
 
       {myPending.length > 0 && (
-        <Callout tone="brand" variant="outline" icon="seal-check" title={`에이전트가 올린 ${myPending.length}건이 결과 승인을 기다리고 있어요`} actions={<Button size="xs" variant="ghost" asChild><Link href="/approvals">보기 →</Link></Button>} actionsPlacement="right">
+        <Callout tone="brand" variant="outline" icon="seal-check" title={`에이전트가 올린 ${myPending.length}건이 결과 승인을 기다리고 있어요`} actions={<Button size="xs" variant="ghost" asChild><Link href="/">보기 →</Link></Button>} actionsPlacement="right">
           확인하고 승인하면 배포 단계로 넘어갑니다.
         </Callout>
       )}

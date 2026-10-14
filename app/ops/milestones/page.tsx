@@ -6,7 +6,8 @@
  * 담당·상태 필터는 마일스톤에만, 레인 칩은 타임라인에만.
  */
 
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { DatePicker, Icon, Select, Tabs, type RangePreset } from "@/components/ctas/ctds";
 import { Page, PageHeader } from "@/components/ctas/ui";
 import { TimelineBoard, parseLocal, type BoardView } from "@/components/ctas/TraceTimeline";
@@ -18,6 +19,7 @@ const STATES: MilestoneState[] = ["planned", "at_risk", "missed", "done"];
 /* 기간 프리셋 — 목업 기준일(TODAY) 기준 */
 const shift = (n: number) => { const d = parseLocal(TODAY); d.setDate(d.getDate() + n); return d; };
 const RANGE_PRESETS: RangePreset[] = [
+  { label: "어제·오늘", getValue: () => ({ from: shift(-1), to: shift(0) }) },
   { label: "최근 7일", getValue: () => ({ from: shift(-6), to: shift(0) }) },
   { label: "최근 30일", getValue: () => ({ from: shift(-29), to: shift(0) }) },
   { label: "앞뒤 2주", getValue: () => ({ from: shift(-14), to: shift(14) }) },
@@ -26,9 +28,21 @@ const RANGE_PRESETS: RangePreset[] = [
   { label: "올해 전체", getValue: () => ({ from: new Date(2026, 0, 1), to: new Date(2026, 11, 31) }) },
 ];
 
+// 홈 타임라인 띠의 → 는 ?range=recent 로 들어온다(어제·오늘만). 주소를 읽으므로 Suspense 로 감싼다
 export default function MilestonesPage() {
-  // 기본 기간: 최근 30일 ~ 오늘 (최신이 맨 위)
-  const [range, setRange] = useState<{ from: Date; to: Date }>(() => ({ from: shift(-30), to: shift(0) }));
+  return (
+    <Suspense>
+      <MilestonesView />
+    </Suspense>
+  );
+}
+
+function MilestonesView() {
+  const params = useSearchParams();
+  // 기본 기간: 최근 30일 ~ 오늘 (최신이 맨 위). ?range=recent 면 어제·오늘
+  const [range, setRange] = useState<{ from: Date; to: Date }>(() =>
+    params.get("range") === "recent" ? { from: shift(-1), to: shift(0) } : { from: shift(-30), to: shift(0) },
+  );
   const [draft, setDraft] = useState<{ from: Date | null; to: Date | null }>(range);
   const [view, setView] = useState<BoardView>("list");
   const [projectFilter, setProjectFilter] = useState<string | null>(null);

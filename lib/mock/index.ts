@@ -85,9 +85,9 @@ export const scenarioFor = (pathname: string) =>
     .filter((s) => pathname === s.route || pathname.startsWith(s.route === "/" ? "/" : s.route))
     .sort((a, b) => b.route.length - a.route.length)[0];
 
-/** 리스크는 따로 페이지가 없다 — 승인 목록의 "리스크 대응" 항목(승인 id = risk:<리스크 id>)으로 연다 */
+/** 리스크는 따로 페이지가 없다 — 홈 승인 목록의 "리스크 대응" 항목(승인 id = risk:<리스크 id>)으로 연다 */
 export const riskApprovalId = (riskId: string) => `risk:${riskId}`;
-export const riskHref = (riskId: string) => `/approvals?open=${encodeURIComponent(riskApprovalId(riskId))}`;
+export const riskHref = (riskId: string) => `/?open=${encodeURIComponent(riskApprovalId(riskId))}`;
 
 /** 링크나 근거 id 가 어떤 종류의 엔티티인지 추정해 라우트를 만든다 */
 export const hrefFor = (id: string, projectId?: string): string | undefined => {
@@ -99,7 +99,7 @@ export const hrefFor = (id: string, projectId?: string): string | undefined => {
   if (id.startsWith("ms-") && pid) return `/projects/${pid}`;
   if (id.startsWith("cf-") && pid) return `/projects/${pid}/conflicts`;
   if (id.startsWith("ct-")) return `/knowledge/contracts`;
-  if (id.startsWith("ap-")) return `/approvals`;
+  if (id.startsWith("ap-")) return `/?open=${encodeURIComponent(id)}`;
   if (id.startsWith("run-")) {
     const r = getRun(id);
     const t = r && getTask(r.taskId);
