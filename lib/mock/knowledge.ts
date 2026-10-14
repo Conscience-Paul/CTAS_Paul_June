@@ -173,11 +173,12 @@ export const insights = {
 };
 
 /**
- * Nora 계획 제안 — 반복되는 패턴을 근거로 Nora 가 계획(WBS·리스크 규칙) 변경을 제안하고, 사람이 반영하거나 보류한다.
- * 지난 제안은 결정·효과와 함께 계속 남는다.
+ * Nora 계획 제안 — 반복되는 패턴을 근거로 Nora 가 계획(WBS·리스크 규칙) 변경을 제안하고, 사람이 결정한다.
+ * 상태는 셋: 결정 대기 · 반영(+ 효과) · 반영 안 함(+ 사유). 30일 동안 결정이 없으면 "반영 안 함"으로 닫히고 사유가 남는다.
+ * 지난 제안은 결정·효과·사유와 함께 계속 남는다 — 같은 제안이 다시 올라와도 지난번 판단을 볼 수 있게.
  */
 export type PlanningPattern = "stage" | "cause" | "bias";
-export type ProposalStatus = "proposed" | "applied" | "held" | "expired";
+export type ProposalStatus = "proposed" | "applied" | "declined";
 
 export interface PlanningProposal {
   id: string;
@@ -193,7 +194,7 @@ export interface PlanningProposal {
   status: ProposalStatus;
   decidedAt?: string;
   decidedBy?: string;
-  /** 보류·만료 사유 */
+  /** 반영 안 함 사유 */
   reason?: string;
   /** 반영 후 효과 */
   effect?: string;
@@ -339,7 +340,7 @@ export const planningProposals: PlanningProposal[] = [
     metric: "+15%",
     finding: "개발 단계가 계획보다 15% 길어짐.",
     proposal: "개발 단계 일정에 +10% 버퍼",
-    status: "held",
+    status: "declined",
     decidedAt: "2026-01-20",
     decidedBy: "김서연",
     reason: "인력 1명 증원으로 대체 — 버퍼 대신 리소스로 대응",
@@ -363,8 +364,9 @@ export const planningProposals: PlanningProposal[] = [
     metric: "+38%",
     finding: "요구사항 정의 단계 +38%.",
     proposal: "요구사항 정의 단계를 2주 연장",
-    status: "expired",
+    status: "declined",
     decidedAt: "2025-07-10",
+    decidedBy: "자동 (30일 경과)",
     reason: "30일 동안 결정 없음 — 근거 프로젝트 3건으로 부족",
   },
   {

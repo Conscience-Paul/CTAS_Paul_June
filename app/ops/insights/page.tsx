@@ -3,7 +3,8 @@
 /**
  * 인사이트 — "지난 프로젝트에서 배운 것을 지금 무엇에 반영하나"에만 답한다. 탭 없이 한 화면.
  *   1. 지금 프로젝트에 미칠 영향 — 진행 중인 프로젝트마다 주의할 단계 · 과거 평균 지연 · 참고(유사 프로젝트 교훈)
- *   2. 반복되는 패턴 — Nora 제안 목록 하나. 지금 제안과 지난 기록(반영·보류·만료)이 같은 목록, 상태 칩으로 거른다.
+ *   2. 반복되는 패턴 — Nora 제안 목록 하나. 지금 제안과 지난 기록이 같은 목록, 상태 칩으로 거른다.
+ *      상태는 셋 — 결정 대기 · 반영(+ 효과) · 반영 안 함(+ 사유, 30일 무결정도 여기).
  *      0건이어도 10건이어도 같은 모양. 줄을 누르면 서랍에서 막대 · 추이 · 근거(과거 프로젝트·대표 사례·계산 방법)
  *      · 반영하면 바뀌는 것 · 같은 패턴의 지난 제안을 본다. 반영하면 일정 변경은 승인 목록으로 올라간다.
  *   3. 근거 데이터 (접어 둠) — 단계별 계획 vs 실제 · 유사 프로젝트
@@ -43,10 +44,9 @@ const PATTERN_LABEL: Record<PlanningPattern, string> = { stage: "단계 지연",
 const STATUS: Record<ProposalStatus, { label: string; tone?: "success" | "warning" | "info" }> = {
   proposed: { label: "결정 대기", tone: "info" },
   applied: { label: "반영", tone: "success" },
-  held: { label: "보류", tone: "warning" },
-  expired: { label: "만료" },
+  declined: { label: "반영 안 함" },
 };
-const STATUS_ORDER: ProposalStatus[] = ["proposed", "applied", "held", "expired"];
+const STATUS_ORDER: ProposalStatus[] = ["proposed", "applied", "declined"];
 /** 패턴별 추이 값 표기 */
 const TREND_FMT: Record<PlanningPattern, (v: number) => string> = {
   stage: (v) => `+${v}%`,
@@ -64,8 +64,11 @@ export default function InsightsPage() {
   const delayOf = (name: string) => { const s = stat(name); return s ? ((s.actualDays - s.plannedDays) / s.plannedDays) * 100 : 0; };
 
   // 이번 화면에서 내린 결정 — 프리뷰 로컬. 결정되면 상태가 바뀌어 기록으로 남는다
-  const [decisions, setDecisions] = useState<Record<string, { status: ProposalStatus; at: string }>>({});
-  const proposals = planningProposals.map((p) => (decisions[p.id] ? { ...p, status: decisions[p.id].status, decidedAt: decisions[p.id].at, decidedBy: "김서연" } : p));
+  const [decisions, setDecisions] = useState<Record<string, { status: ProposalStatus; at: string; reason?: string }>>({});
+  const proposals = planningProposals.map((p) => {
+    const d = decisions[p.id];
+    return d ? { ...p, status: d.status, decidedAt: d.at, decidedBy: "김서연", reason: d.reason ?? p.reason } : p;
+  });
   const [filter, setFilter] = useState<ProposalStatus | "all">("all");
   const [openId, setOpenId] = useState<string | null>(null);
   const opened = proposals.find((p) => p.id === openId);
@@ -77,10 +80,10 @@ export default function InsightsPage() {
   const shown = sorted.filter((p) => filter === "all" || p.status === filter);
   const countOf = (s: ProposalStatus) => proposals.filter((p) => p.status === s).length;
 
-  const decide = (p: PlanningProposal, status: "applied" | "held") => {
-    setDecisions((d) => ({ ...d, [p.id]: { status, at: new Date().toISOString().slice(0, 10) } }));
-    if (status === "held") {
-      toast({ title: "제안 보류", description: "기록에 남습니다.", tone: "neutral" });
+  const decide = (p: PlanningProposal, status: "applied" | "declined", reason?: string) => {
+    setDecisions((d) => ({ ...d, [p.id]: { status, at: new Date().toISOString().slice(0, 10), reason } }));
+    if (status === "declined") {
+      toast({ title: "반영 안 함", description: reason ? `사유: ${reason} — 기록에 남습니다.` : "기록에 남습니다.", tone: "neutral" });
       return;
     }
     // 반영 — 일정 변경은 바로 바꾸지 않고 승인 목록 "일정 변경"으로 올린다
@@ -219,8 +222,7 @@ export default function InsightsPage() {
                     </button>
                     {p.status === "proposed" && (
                       <span className={styles.prowActions}>
-                        <Button size="sm" variant="ghost" onClick={() => decide(p, "held")}>보류</Button>
-                        <Button size="sm" variant="primary" leftIcon={<Icon name="check" />} onClick={() => decide(p, "applied")}>반영</Button>
+                        <DecideActions p={p} onDecide={decide} />
                       </span>
                     )}
                   </li>
@@ -305,7 +307,7 @@ function ProposalDrawer({
   p: PlanningProposal;
   others: PlanningProposal[];
   onOpen: (id: string) => void;
-  onDecide: (p: PlanningProposal, s: "applied" | "held") => void;
+  onDecide: (p: PlanningProposal, s: "applied" | "declined", reason?: string) => void;
   onClose: () => void;
 }) {
   const { stageDuration, delayCauses, estimateBias, trends } = insights;
@@ -334,12 +336,7 @@ function ProposalDrawer({
         </span>
       }
       footer={
-        p.status === "proposed" ? (
-          <>
-            <Button variant="ghost" onClick={() => onDecide(p, "held")}>보류</Button>
-            <Button variant="primary" leftIcon={<Icon name="check" />} onClick={() => onDecide(p, "applied")}>반영</Button>
-          </>
-        ) : undefined
+        p.status === "proposed" ? <DecideActions p={p} onDecide={onDecide} size="md" /> : undefined
       }
     >
       <div className={styles.drawerBody}>
@@ -426,6 +423,38 @@ function ProposalDrawer({
         )}
       </div>
     </Drawer>
+  );
+}
+
+/** 반영 / 반영 안 함 — "반영 안 함"은 사유를 짧게 받고 확정 (빈 사유도 허용) */
+function DecideActions({ p, onDecide, size = "sm" }: { p: PlanningProposal; onDecide: (p: PlanningProposal, s: "applied" | "declined", reason?: string) => void; size?: "sm" | "md" }) {
+  const [declining, setDeclining] = useState(false);
+  const [reason, setReason] = useState("");
+  if (declining) {
+    return (
+      <span className={styles.declineBox}>
+        <input
+          autoFocus
+          className={styles.reasonInput}
+          placeholder="반영하지 않는 이유 (선택)"
+          aria-label="반영 안 함 사유"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onDecide(p, "declined", reason.trim() || undefined);
+            if (e.key === "Escape") setDeclining(false);
+          }}
+        />
+        <Button size={size} variant="ghost" onClick={() => setDeclining(false)}>취소</Button>
+        <Button size={size} variant="outline" onClick={() => onDecide(p, "declined", reason.trim() || undefined)}>확정</Button>
+      </span>
+    );
+  }
+  return (
+    <>
+      <Button size={size} variant="ghost" onClick={() => setDeclining(true)}>반영 안 함</Button>
+      <Button size={size} variant="primary" leftIcon={<Icon name="check" />} onClick={() => onDecide(p, "applied")}>반영</Button>
+    </>
   );
 }
 
