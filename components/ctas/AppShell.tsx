@@ -47,12 +47,13 @@ import styles from "./AppShell.module.css";
 
 type Area = "dashboard" | "ops" | "knowledge" | "dev" | "settings";
 
-const AREAS: { id: Area; icon: IconName; label: string }[] = [
-  { id: "dashboard", icon: "squares-four", label: "대시보드" },
-  { id: "ops", icon: "compass", label: "운영" },
-  { id: "knowledge", icon: "stack", label: "지식" },
-  { id: "dev", icon: "brackets-square", label: "개발" },
-  { id: "settings", icon: "gear", label: "설정" },
+/* Rail 을 누르면 그 영역의 첫 메뉴(home)로 이동한다 */
+const AREAS: { id: Area; icon: IconName; label: string; home: string }[] = [
+  { id: "dashboard", icon: "squares-four", label: "대시보드", home: "/" },
+  { id: "ops", icon: "compass", label: "운영", home: "/projects" },
+  { id: "knowledge", icon: "stack", label: "지식", home: "/knowledge" },
+  { id: "dev", icon: "brackets-square", label: "개발", home: "/dev" },
+  { id: "settings", icon: "gear", label: "설정", home: "/settings" },
 ];
 
 /** 라우트 → 영역 */
@@ -155,6 +156,7 @@ function Crumbs() {
 /* ── Sidebar (Rail + Panel) ────────────────────── */
 function ShellSidebar() {
   const pathname = usePathname() ?? "/";
+  const router = useRouter();
   const { role, approvalDecisions, projectId, setProjectId, aiOpen, setAiOpen } = usePreview();
 
   // 라우트에서 유도한 영역을 기본으로, Rail 클릭으로 미리보기 전환 허용. 라우트가 바뀌면 재동기화.
@@ -276,7 +278,7 @@ function ShellSidebar() {
                   aria-label={a.label}
                   aria-selected={a.id === area}
                   role="tab"
-                  onClick={() => setArea(a.id)}
+                  onClick={() => { setArea(a.id); router.push(a.home); }}
                 />
               </Tooltip>
             </span>
