@@ -1,0 +1,185 @@
+/* 컨텍스트 화면 전용 조각 — 토큰만 사용 */
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.filtersSpacer {
+  flex: 1;
+}
+
+.search {
+  width: calc(var(--sidebar-w) * 1.2);
+}
+
+/* 상세 3열 */
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.sticky {
+  position: sticky;
+  top: 0;
+}
+
+.bodyHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.linkGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.linkGroupTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+}
+
+.linkRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--fg);
+  text-decoration: none;
+  min-width: 0;
+}
+
+.linkRow:hover {
+  background: var(--hover);
+}
+
+.linkRowLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+/* 그래프 */
+.graphWrap {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+}
+
+.graph {
+  display: block;
+  font-family: var(--font-sans);
+}
+
+.node {
+  cursor: pointer;
+}
+
+.nodeRect {
+  fill: var(--bg-subtle);
+  stroke: var(--border);
+  transition: var(--transition-colors);
+}
+
+.node:hover .nodeRect {
+  stroke: var(--border-strong);
+}
+
+.node[data-selected] .nodeRect {
+  stroke: var(--primary);
+  fill: var(--primary-subtle);
+}
+
+.nodeKind {
+  fill: var(--fg-subtle);
+  font-size: var(--text-2xs);
+}
+
+.nodeTitle {
+  fill: var(--fg);
+  font-size: var(--text-xs);
+}
+
+.edge {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+.edgeConflict {
+  stroke: var(--destructive);
+  stroke-dasharray: 4 3;
+}
+
+.edgeDim {
+  stroke: var(--border);
+}
+
+.edgeHi {
+  stroke: var(--primary);
+}
+
+.colTitle {
+  fill: var(--fg-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.legendLine {
+  display: inline-block;
+  width: var(--space-6);
+  border-top: 1px solid var(--border-strong);
+}
+
+.legendLineConflict {
+  border-top-style: dashed;
+  border-top-color: var(--destructive);
+}
+
+.legendLineHi {
+  border-top-color: var(--primary);
+}

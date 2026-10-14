@@ -1,0 +1,125 @@
+/* 설정 — 역할 매트릭스, 격리 다이어그램. 토큰만 사용. */
+
+.matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.matrix th,
+.matrix td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.matrix th {
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+  background: var(--bg-subtle);
+}
+
+.matrix th:first-child,
+.matrix td:first-child {
+  text-align: left;
+  color: var(--fg-strong);
+}
+
+.matrix tr[data-current] td {
+  background: var(--primary-subtle);
+}
+
+.allow {
+  color: var(--success);
+}
+
+.deny {
+  color: var(--fg-subtle);
+}
+
+.partial {
+  color: var(--warning);
+}
+
+/* 격리 다이어그램 */
+.isolation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: stretch;
+}
+
+.wall {
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--border-strong) 0,
+    var(--border-strong) var(--space-2),
+    transparent var(--space-2),
+    transparent var(--space-3)
+  );
+  position: relative;
+}
+
+.wallLabel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
+  white-space: nowrap;
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+  background: var(--bg);
+  padding-inline: var(--space-1);
+}
+
+.tenant {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.node {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.nodeNora {
+  border-color: var(--primary-border-color, var(--primary));
+  background: var(--primary-subtle);
+}
+
+.edge {
+  display: flex;
+  justify-content: center;
+  color: var(--fg-subtle);
+  line-height: 1;
+}
+
+.children {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--border);
+}
+
+.connectorRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.connectorRow + .connectorRow {
+  border-top: 1px solid var(--border);
+}

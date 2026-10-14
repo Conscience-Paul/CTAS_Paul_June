@@ -1,0 +1,17 @@
+@import "../components/ctds/tokens.css";
+@import "tailwindcss";
+
+/* CTAS — 색·폰트는 CTDS 토큰이 전담. create-next-app 기본 테마 변수는 제거. */
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+}
+
+/* 스크롤바 숨김 — 스크롤 동작은 유지, 시각만 제거 (데스크톱 앱 느낌). */
+* {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}

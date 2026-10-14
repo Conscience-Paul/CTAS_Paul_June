@@ -1,0 +1,24 @@
+.wizard {
+  gap: var(--space-4);
+}
+
+.checkList {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2) var(--space-3);
+  gap: var(--space-2);
+  max-height: calc(var(--control-h-md) * 8);
+  overflow-y: auto;
+}
+
+/* 상세: 버전 레일 / 본문 / 사이드 3열 */
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.body {
+  min-height: calc(var(--control-h-md) * 10);
+}

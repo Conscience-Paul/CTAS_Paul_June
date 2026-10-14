@@ -1,0 +1,293 @@
+/* CTAS 페이지 공통 조각. 색·크기·간격은 전부 CTDS 토큰 경유. */
+
+/* 폭 제한 없음 — AI 패널이 열리면 콘텐츠가 밀리고, 닫히면 다시 채운다. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  min-width: 0;
+}
+
+.pageWide {
+  max-width: none;
+}
+
+/* 헤더 */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  line-height: var(--lh-xs);
+  color: var(--fg-subtle);
+}
+
+.title {
+  font-size: var(--text-xl);
+  line-height: var(--lh-tight);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-strong);
+  margin: 0;
+}
+
+.lead {
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+  color: var(--fg-muted);
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+/* 섹션 */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-strong);
+  margin: 0;
+}
+
+.sectionHint {
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+}
+
+/* 패널(카드) — spare: 표면 사다리 + hairline 만 */
+.panel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.panelSubtle {
+  background: var(--bg-subtle);
+}
+
+.panelFlush {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.panelInteractive {
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: var(--transition-colors);
+}
+.panelInteractive:hover {
+  background: var(--bg-subtle);
+}
+
+/* 그리드 */
+.grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+}
+
+.split {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.splitEven {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* 인라인 묶음 */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.rowTight {
+  gap: var(--space-1);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.stackTight {
+  gap: var(--space-1);
+}
+
+/* 텍스트 */
+.muted {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+}
+
+.subtle {
+  color: var(--fg-subtle);
+  font-size: var(--text-xs);
+  line-height: var(--lh-xs);
+}
+
+.strong {
+  color: var(--fg-strong);
+  font-weight: var(--font-weight-medium);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+/* 키-값 */
+.kv {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--space-4);
+  row-gap: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+}
+
+.kvKey {
+  color: var(--fg-subtle);
+  white-space: nowrap;
+}
+
+.kvVal {
+  color: var(--fg);
+  min-width: 0;
+}
+
+/* 본문 프로즈 — 마크다운 비슷한 목 본문 */
+.prose {
+  font-size: var(--text-sm);
+  line-height: var(--lh-base);
+  color: var(--fg);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.prose :global(strong) {
+  color: var(--fg-strong);
+  font-weight: var(--font-weight-medium);
+}
+
+/* 구분선 리스트 */
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.list > * + * {
+  border-top: 1px solid var(--border);
+}
+
+/* TableHeader/TableRow(line variant) 컨테이너 — CTDS 의 line 테이블은 "페이지 표면에
+   얹히는 눈금자"라 첫/끝 셀 padding 이 0 이다. 테두리 카드 안에 넣으면 셀이 경계에
+   붙으므로, 테두리 없이 가로 스크롤만 담당하는 얇은 래퍼를 쓴다. */
+.tableBox {
+  overflow-x: auto;
+  min-width: 0;
+}
+
+/* 행·헤더 루트에 좌우 숨구멍. CTDS line 테이블은 첫/끝 셀 padding 이 0 이라
+   hover 배경이 텍스트에 바짝 붙는다 — 루트에 padding 을 주면 hover 배경은 끝까지
+   깔리고 콘텐츠만 안쪽으로 들어온다. 자식은 TableHeader / TableRow 뿐. */
+.tableBox > * {
+  padding-inline: var(--space-4);
+  box-sizing: border-box;
+}
+
+/* ListItem 전용 패널 — CTDS ListItem 은 자체 padding/hairline 이 없고 음의 margin 으로
+   부모 row 의 padding 을 되찾는 구조. 그래서 row wrapper 가 여백·hairline 을 담당하고,
+   hover 배경은 row 의 padding box 를 정확히 덮는다(이웃 침범 없음). */
+.listPanel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.listRow {
+  padding: var(--space-3) var(--space-4);
+  min-width: 0;
+}
+
+.listRow + .listRow {
+  border-top: 1px solid var(--border);
+}
+
+/* hover bg 를 좌우 padding 까지 확장 — ListItem 문서의 "부모 wrapper 에서 조정" 규칙 */
+.listRow > :first-child {
+  padding-inline: var(--space-4);
+  margin-inline: calc(var(--space-4) * -1);
+}
+
+/* 링크 */
+.link {
+  color: var(--primary);
+  text-decoration: none;
+}
+.link:hover {
+  text-decoration: underline;
+}
+
+/* 빈 상태 래퍼 */
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+}

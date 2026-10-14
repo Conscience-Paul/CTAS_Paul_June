@@ -1,0 +1,123 @@
+/* 대시보드 운영 현황 — CSS 바 차트. 색은 토큰, 마크는 얇게. */
+
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.swatch {
+  width: var(--space-3);
+  height: var(--space-2);
+  border-radius: var(--radius-xs);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 9rem) minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.label {
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.label:hover {
+  color: var(--primary);
+}
+
+/* 세그먼트 사이 2px 표면 간격 — 겹침 없이 구분 */
+.track {
+  display: flex;
+  gap: 2px;
+  height: var(--space-2);
+  min-width: 0;
+}
+
+.seg {
+  height: 100%;
+  min-width: 0;
+  transition: var(--transition-colors);
+}
+
+.seg:first-child {
+  border-radius: var(--radius-xs) 0 0 var(--radius-xs);
+}
+.seg:last-child {
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+}
+.seg:only-child {
+  border-radius: var(--radius-xs);
+}
+
+.row:hover .seg {
+  filter: brightness(0.92);
+}
+
+.value {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* 톤 — 상태색은 라벨과 함께만 쓴다 */
+.primary { background: var(--primary); }
+.muted { background: var(--border-strong); }
+.success { background: var(--success); }
+.info { background: var(--info); }
+.warning { background: var(--warning); }
+.destructive { background: var(--destructive); }
+.subtle { background: var(--bg-muted); }
+
+/* 단일 큰 스택 바 (업무 상태 분포) */
+.stack {
+  display: flex;
+  gap: 2px;
+  height: var(--space-4);
+}
+
+.stackSeg {
+  min-width: 0;
+  border-radius: var(--radius-xs);
+}
+
+.counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: var(--space-2);
+}
+
+.count {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+.countNum {
+  font-family: var(--font-mono);
+  color: var(--fg-strong);
+}

@@ -1,0 +1,196 @@
+/* 추적 타임라인 — 1일 단위 열 × 레인. 좌표는 계산값(px), 색·크기는 토큰. */
+
+/* 한 스크롤 컨테이너 안에 행(axis + 레인들). 왼쪽 라벨 칸은 sticky — subgrid 없이도 행 높이가 항상 일치 */
+.scroller {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.row {
+  display: flex;
+  align-items: stretch;
+  min-width: max-content;
+}
+
+.labelCell {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  flex: 0 0 8rem;
+  width: 8rem;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  padding: var(--space-2) var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.row:first-child .labelCell {
+  border-top: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.laneTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-strong);
+  white-space: nowrap;
+}
+
+.laneCount {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+}
+
+.axis {
+  position: relative;
+  height: var(--control-h-md);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.day {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: var(--space-1);
+  font-size: var(--text-2xs);
+  line-height: 1.2;
+  color: var(--fg-subtle);
+  border-left: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.day[data-month] {
+  color: var(--fg-muted);
+}
+
+.day[data-weekend] {
+  opacity: 0.7;
+}
+
+.day[data-today] {
+  color: var(--primary);
+  font-weight: var(--font-weight-medium);
+  opacity: 1;
+}
+
+.lane {
+  position: relative;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.grid {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+  opacity: 0.5;
+}
+
+.grid[data-weekend] {
+  background: var(--bg-subtle);
+  opacity: 1;
+  width: var(--day-w);
+  z-index: 0;
+}
+
+.today {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--primary);
+  z-index: 1;
+}
+
+/* 칩 — 간단한 제목만. 클릭 → Drawer */
+.chip {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-1);
+  height: var(--control-h-sm);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--fg-strong);
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  overflow: hidden;
+  transition: var(--transition-colors);
+}
+
+.chip:hover {
+  background: var(--bg-subtle);
+  border-color: var(--border-strong);
+  z-index: 3;
+}
+
+.chipText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.chipVer {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+  flex-shrink: 0;
+}
+
+.chip[data-kind="requirement"],
+.chip[data-kind="decision"] { border-left-color: var(--primary); }
+.chip[data-kind="meeting_note"],
+.chip[data-kind="conversation"],
+.chip[data-kind="customer_doc"] { border-left-color: var(--border-strong); }
+.chip[data-kind="our_doc"],
+.chip[data-kind="change"] { border-left-color: var(--info); }
+.chip[data-kind="task"] { border-left-color: var(--warning); }
+.chip[data-kind="deliverable"] { border-left-color: var(--success); }
+.chip[data-kind="contract"] { border-left-color: var(--destructive); }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.swatch {
+  width: var(--space-1);
+  height: var(--space-3);
+  border-radius: var(--radius-xs);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}

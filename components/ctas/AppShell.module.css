@@ -1,0 +1,133 @@
+/* AppFrame.Content 안: 메인 + AI 패널 2열. 각 열이 독립 스크롤. */
+.body {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.ai {
+  /* 사이드바 폭 기준 비례 — 토큰 파생 */
+  width: calc(var(--sidebar-w) * 1.9);
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  background: var(--bg);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── 2단 사이드바: Rail(영역 전환) + Sidebar(영역 메뉴) ──
+   CTDS 규칙: 앱 셸은 SidebarSplit 대신 바깥 flex 로 Rail + Sidebar 를 직접 조립. */
+.split {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  width: calc(var(--control-h-lg) + var(--space-3) * 2);
+  padding-block: var(--space-3);
+  padding-inline: var(--space-2);
+  height: 100%;
+  min-height: 0;
+  border-right: var(--hairline) solid var(--border);
+  flex-shrink: 0;
+}
+
+.railBrand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-h-lg);
+  padding-bottom: var(--space-3);
+}
+
+.railItems {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  align-items: center;
+}
+
+.railSep {
+  width: 100%;
+  height: var(--hairline);
+  background: var(--border);
+  margin-block: var(--space-2);
+}
+
+.railFooter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-items: center;
+  padding-top: var(--space-3);
+}
+
+.brandMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-h-md);
+  height: var(--control-h-md);
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+/* 패널 상단: 영역 제목 + 검색 + (프로젝트 선택) */
+.panelHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.panelTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-strong);
+  padding-inline: var(--space-1);
+}
+
+.switcher {
+  width: 100%;
+}
+
+/* Topbar 내부 */
+.crumbs {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.topRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.roleSwitch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-inline: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+}

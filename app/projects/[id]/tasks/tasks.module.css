@@ -1,0 +1,176 @@
+/* 업무 보드 — 상태 컬럼 가로 스크롤 */
+.board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(calc(var(--sidebar-w) * 1.1), 1fr);
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+  align-items: start;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+  min-height: calc(var(--control-h-lg) * 4);
+}
+
+.columnHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  line-height: var(--lh-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-muted);
+}
+
+.card {
+  gap: var(--space-2);
+}
+
+.cardTitle {
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+  color: var(--fg-strong);
+}
+
+.blocked {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  line-height: var(--lh-xs);
+  color: var(--destructive-fg);
+}
+
+.cardFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* 인박스 */
+.inboxActions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+/* 상세 */
+.checkRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: start;
+  padding: var(--space-2) 0;
+}
+
+.checkRow + .checkRow {
+  border-top: 1px solid var(--border);
+}
+
+.pass {
+  color: var(--success);
+}
+.warn {
+  color: var(--warning);
+}
+.fail {
+  color: var(--destructive);
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.timelineItem {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+}
+
+.timelineItem + .timelineItem {
+  border-top: 1px solid var(--border);
+}
+
+.runHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* ── Drawer ── */
+.drawerBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+}
+
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.check[data-status="pass"] { color: var(--success); }
+.check[data-status="warn"] { color: var(--warning); }
+.check[data-status="fail"] { color: var(--destructive); }
+
+/* ── 선택 툴바 · 통합 그룹 ── */
+.selectBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-h-md);
+}
+
+.groupTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.groupName {
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-strong);
+}
+
+.member {
+  padding-left: var(--space-6);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  color: var(--fg);
+}
+
+.member::before {
+  content: "";
+  width: var(--space-3);
+  height: 1px;
+  background: var(--border-strong);
+  flex-shrink: 0;
+}
+
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}

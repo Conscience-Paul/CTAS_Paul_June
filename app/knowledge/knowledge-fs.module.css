@@ -1,0 +1,107 @@
+/* 지식 › 문서함 — 계약·문서와 같은 Finder 식 탐색 */
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.navSep {
+  color: var(--fg-subtle);
+  display: inline-flex;
+}
+
+.folderMark {
+  position: relative;
+  display: inline-block;
+  width: var(--space-5);
+  height: var(--space-4);
+  margin-top: var(--space-1);
+  background: var(--primary-subtle);
+  border: 1px solid var(--primary-border-color);
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+}
+
+.folderMark::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: calc(var(--space-1) * -1);
+  width: 45%;
+  height: var(--space-1);
+  background: var(--primary-subtle);
+  border: 1px solid var(--primary-border-color);
+  border-bottom: 0;
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+}
+
+.folderName {
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-strong);
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.filterLabel {
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+  margin-inline: var(--space-1);
+}
+
+.filterLabel:not(:first-child) {
+  margin-inline-start: var(--space-3);
+}
+
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Drawer */
+.drawerBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+}
+
+.linkList {
+  display: flex;
+  flex-direction: column;
+}
+
+.linkRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--border);
+  font-size: var(--text-sm);
+  min-width: 0;
+}
+
+.linkRow:first-child {
+  border-top: 0;
+}
+
+.linkTitle {
+  color: var(--fg);
+  text-decoration: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linkTitle:hover {
+  color: var(--primary);
+}

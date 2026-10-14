@@ -1,0 +1,180 @@
+/* 지식 영역 공용 — 패턴 카드, 승격 위저드, 인사이트 차트. 토큰만 사용. */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.filterSep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+  margin-inline: var(--space-1);
+}
+
+.cardTitle {
+  font-size: var(--text-base);
+  line-height: var(--lh-snug);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-strong);
+}
+
+.cardFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
+.audit {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-3);
+}
+
+/* 승격 위저드 */
+.promote {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.candidates {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.diffMark {
+  background: var(--primary-subtle);
+  color: var(--primary);
+  border-radius: var(--radius-xs);
+  padding-inline: var(--space-0);
+  font-weight: var(--font-weight-medium);
+}
+
+.diffOrig {
+  background: var(--warning-subtle);
+  color: var(--warning-fg);
+  border-radius: var(--radius-xs);
+  padding-inline: var(--space-0);
+}
+
+/* 차트 — CSS 바. 마크는 얇게, 끝 radius 는 데이터 끝단만. */
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.legend {
+  display: flex;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.swatch {
+  width: var(--space-3);
+  height: var(--space-2);
+  border-radius: var(--radius-xs);
+}
+
+.swatchPrimary {
+  background: var(--primary);
+}
+
+.swatchMuted {
+  background: var(--border-strong);
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: minmax(0, 7rem) minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  font-size: var(--text-sm);
+}
+
+.barLabel {
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barTrack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0);
+}
+
+.bar {
+  height: var(--space-2);
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  min-width: 1px;
+  transition: var(--transition-colors);
+}
+
+.barPrimary {
+  background: var(--primary);
+}
+
+.barMuted {
+  background: var(--border-strong);
+}
+
+.barWarning {
+  background: var(--warning);
+}
+
+.barValue {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.refLine {
+  position: absolute;
+  top: calc(var(--space-1) * -1);
+  bottom: calc(var(--space-1) * -1);
+  width: 1px;
+  background: var(--fg-subtle);
+}
+
+.refLabel {
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+  text-align: right;
+}
+
+.barRow:hover .bar {
+  filter: brightness(0.92);
+}
+
+.similar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.similarity {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  color: var(--fg-strong);
+  line-height: var(--lh-tight);
+}

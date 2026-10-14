@@ -1,0 +1,11 @@
+.tab {
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+}
+
+.vsep {
+  width: var(--hairline);
+  height: var(--control-h-sm);
+  background: var(--border);
+  margin-inline: var(--space-2);
+}

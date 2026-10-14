@@ -1,0 +1,46 @@
+{
+  "name": "ctas-demo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@conscience-technology/ctds": "^0.2.5",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@phosphor-icons/react": "^2.1.10",
+    "@radix-ui/react-context-menu": "^2.4.0",
+    "@radix-ui/react-dialog": "^1.3.0",
+    "@radix-ui/react-dropdown-menu": "^2.2.0",
+    "@radix-ui/react-popover": "^1.3.0",
+    "@radix-ui/react-select": "^2.4.0",
+    "@radix-ui/react-slot": "^1.5.0",
+    "@radix-ui/react-toast": "^1.3.0",
+    "@radix-ui/react-tooltip": "^1.4.0",
+    "lottie-react": "^3.1.2",
+    "lucide-react": "^1.55.0",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "solar-icon-set": "^2.0.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/turbopack": "^4",
+    "@tauri-apps/cli": "^2.12.2",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
