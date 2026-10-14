@@ -316,11 +316,11 @@ function ShellSidebar() {
 /* ── Topbar ────────────────────────────────────── */
 function ShellTopbar() {
   const router = useRouter();
-  const { aiOpen, setAiOpen, previewOpen, openPreview, closePreview, readNotifs, markRead, markAllRead } = usePreview();
+  const { aiOpen, setAiOpen, readNotifs, markRead, markAllRead } = usePreview();
   const unread = notifications.filter((n) => !(readNotifs[n.id] ?? n.read)).length;
   const sorted = [...notifications].sort((x, y) => y.at.localeCompare(x.at));
   return (
-    <Topbar size="sm">
+    <Topbar size="sm" className={styles.topbar}>
       <Crumbs />
       <Topbar.Spacer />
       <div className={styles.topRight}>
@@ -353,13 +353,6 @@ function ShellTopbar() {
             })}
           </DropdownMenu.Content>
         </DropdownMenu>
-        <IconButton
-          size="md"
-          variant={previewOpen ? "secondary" : "ghost"}
-          icon={<Icon name="devices" size={22} weight={previewOpen ? "fill" : "regular"} />}
-          aria-label="미리보기 (localhost 웹뷰)"
-          onClick={() => (previewOpen ? closePreview() : openPreview())}
-        />
         <IconButton
           size="md"
           variant={aiOpen ? "secondary" : "ghost"}

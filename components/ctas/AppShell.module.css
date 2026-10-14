@@ -121,6 +121,14 @@
   width: 100%;
 }
 
+/* Topbar — AppFrame 의 topbarSlot(flex) 안에서 가로를 꽉 채워야 우측 묶음이 끝으로 간다.
+   CTDS Topbar 루트는 폭 지정이 없어 내용 폭만큼만 차지한다. */
+.topbar {
+  flex: 1;
+  min-width: 0;
+  justify-content: space-between;
+}
+
 /* Topbar 내부 */
 .crumbs {
   min-width: 0;
