@@ -315,6 +315,30 @@
   flex-shrink: 0;
 }
 
+/* 반영 안 함 — 사유 입력 */
+.declineBox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.reasonInput {
+  width: 14rem;
+  height: var(--control-h-sm);
+  padding: 0 var(--space-2);
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--fg-strong);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+.reasonInput:focus {
+  border-color: var(--primary);
+}
+
 .effect {
   font-weight: var(--font-weight-medium);
   color: var(--success);
