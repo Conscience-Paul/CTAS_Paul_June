@@ -53,3 +53,10 @@
   font-size: var(--text-xs);
   white-space: pre-wrap;
 }
+
+.vsep {
+  width: var(--hairline);
+  height: var(--control-h-sm);
+  background: var(--border);
+  margin-inline: var(--space-2);
+}

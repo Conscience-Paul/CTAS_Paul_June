@@ -8,10 +8,10 @@
 import { useState } from "react";
 import { Badge, Button, Icon, TableHeader, TableRow } from "@/components/ctas/ctds";
 import { Page, PageHeader, Row, Subtle, TableBox } from "@/components/ctas/ui";
-import { KnowledgeDrawer } from "@/app/knowledge/_shared";
-import { LABEL, TONE, agentRuns, fmtDateTime, getProject, getTask, type AgentRun, type KEntry, type RunState } from "@/lib/mock";
+import { DevDrawer } from "../_drawer";
+import { LABEL, TONE, agentRuns, fmtDateTime, getProject, getTask, type AgentRun, type RunState } from "@/lib/mock";
 import { usePreview } from "@/lib/preview-state";
-import { CountFilter, ProjectFilter } from "../_shared";
+import { CountFilter, ProjectSelect } from "../_shared";
 import styles from "../dev.module.css";
 
 const columns = [
@@ -27,21 +27,20 @@ const columns = [
 export default function AgentsPage() {
   const { openPreview } = usePreview();
   const [projectFilter, setProjectFilter] = useState<string | null>(null);
-  const [state, setState] = useState<RunState | null>(null);
-  const [open, setOpen] = useState<KEntry | null>(null);
+  const [state, setState] = useState<RunState[]>([]);
+  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
+  const { taskGroups } = usePreview();
   const base = agentRuns.filter((r) => !projectFilter || getTask(r.taskId)?.projectId === projectFilter);
-  const runs = base.filter((r) => !state || r.state === state).sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  const runs = base.filter((r) => state.length === 0 || state.includes(r.state)).sort((a, b) => b.startedAt.localeCompare(a.startedAt));
   const count = (s: RunState) => base.filter((r) => r.state === s).length;
 
   return (
     <Page wide>
       <PageHeader title="에이전트" lead="실행 시도별 계획 · 결과 · diff. 승인은 사람이 하고 반려 사유는 다음 시도에 들어갑니다." actions={<Button size="sm" variant="outline" leftIcon={<Icon name="devices" />} onClick={() => openPreview()}>미리보기</Button>} />
       <div className={styles.filters}>
-        <Subtle className={styles.filterLabel}>프로젝트</Subtle>
-        <ProjectFilter value={projectFilter} onChange={setProjectFilter} />
+        <ProjectSelect value={projectFilter} onChange={setProjectFilter} />
         <span className={styles.vsep} />
         <CountFilter<RunState>
-          label="상태"
           value={state}
           onChange={setState}
           options={[
@@ -57,10 +56,10 @@ export default function AgentsPage() {
       <TableBox>
         <TableHeader columns={columns} variant="line" />
         {runs.map((r) => (
-          <TableRow<AgentRun> key={r.id} variant="line" data={r} onClick={() => setOpen({ type: "run", id: r.id, item: r })} columns={columns.map((c) => ({ ...c, render: (d: AgentRun) => cell(c.key, d) }))} />
+          <TableRow<AgentRun> key={r.id} variant="line" data={r} onClick={() => setOpenTaskId(r.taskId)} columns={columns.map((c) => ({ ...c, render: (d: AgentRun) => cell(c.key, d) }))} />
         ))}
       </TableBox>
-      {open && <KnowledgeDrawer entry={open} onClose={() => setOpen(null)} onAskAi={() => setOpen(null)} />}
+      {openTaskId && getTask(openTaskId) && <DevDrawer task={getTask(openTaskId)!} group={taskGroups.find((g) => g.taskIds.includes(openTaskId))} onClose={() => setOpenTaskId(null)} />}
     </Page>
   );
 }

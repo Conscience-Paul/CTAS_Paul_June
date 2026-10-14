@@ -7,13 +7,13 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Avatar, Badge, Button, Callout, FilterButton, Icon, Input, TableHeader, TableRow } from "@/components/ctas/ctds";
+import { Avatar, Badge, Button, Callout, Icon, Input, TableHeader, TableRow } from "@/components/ctas/ctds";
 import { Page, PageHeader, Row, SeverityBadge, Stack, Strong, Subtle, TableBox } from "@/components/ctas/ui";
-import { TaskDrawer } from "@/app/projects/[id]/tasks/_drawer";
+import { DevDrawer } from "./_drawer";
 import { IntakeDrawer } from "./_intake";
 import { approvals, getMember, type Task, type TaskKind } from "@/lib/mock";
 import { usePreview } from "@/lib/preview-state";
-import { CountFilter, OPEN, ProjectFilter, devTasks, taskCell, taskColumns } from "./_shared";
+import { CountFilter, OPEN, ProjectSelect, WhoSelect, devTasks, taskCell, taskColumns } from "./_shared";
 import styles from "./dev.module.css";
 
 type Scope = "open" | "review" | "blocked" | "done";
@@ -22,8 +22,8 @@ export default function DevListPage() {
   const { approvalDecisions, taskGroups, addTaskGroup, mentionDoc } = usePreview();
   const [projectFilter, setProjectFilter] = useState<string | null>(null);
   const [who, setWho] = useState<"all" | "mine">("all");
-  const [scope, setScope] = useState<Scope | null>("open");
-  const [kind, setKind] = useState<TaskKind | null>(null);
+  const [scope, setScope] = useState<Scope[]>(["open"]);
+  const [kind, setKind] = useState<TaskKind[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [openId, setOpenId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -32,7 +32,7 @@ export default function DevListPage() {
   const all = devTasks();
   const base = all.filter((t) => (!projectFilter || t.projectId === projectFilter) && (who === "all" || t.ownerId === "m-seoyeon" || t.ownerId === "m-junho"));
   const scopeOf = (t: Task): Scope => (!OPEN(t) ? "done" : t.state === "blocked" ? "blocked" : t.state === "pending_review" ? "review" : "open");
-  const listed = base.filter((t) => (!scope || scopeOf(t) === scope) && (!kind || t.kind === kind));
+  const listed = base.filter((t) => (scope.length === 0 || scope.includes(scopeOf(t))) && (kind.length === 0 || kind.includes(t.kind)));
   const myPending = approvals.filter((a) => (!projectFilter || a.projectId === projectFilter) && a.kind === "result" && (approvalDecisions[a.id] ?? a.state) === "pending");
 
   const groups = taskGroups.map((g) => ({ ...g, taskIds: g.taskIds.filter((id) => listed.some((t) => t.id === id)) })).filter((g) => g.taskIds.length > 0);
@@ -63,42 +63,33 @@ export default function DevListPage() {
         actions={<Button size="sm" variant="primary" leftIcon={<Icon name="plus" />} onClick={() => setIntake(true)}>접수</Button>}
       />
 
-      <Stack tight>
-        <div className={styles.filters}>
-          <Subtle className={styles.filterLabel}>프로젝트</Subtle>
-          <ProjectFilter value={projectFilter} onChange={setProjectFilter} />
-          <span className={styles.vsep} />
-          <Subtle className={styles.filterLabel}>누구의</Subtle>
-          <FilterButton size="sm" selected={who === "all"} onClick={() => setWho("all")}>전체</FilterButton>
-          <FilterButton size="sm" selected={who === "mine"} onClick={() => setWho("mine")}>내 담당</FilterButton>
-        </div>
-        <div className={styles.filters}>
-          <CountFilter<Scope>
-            label="상태"
-            value={scope}
-            onChange={setScope}
-            options={[
-              { id: "open", label: "미해결", count: base.filter((t) => scopeOf(t) === "open").length },
-              { id: "review", label: "승인 대기", count: base.filter((t) => scopeOf(t) === "review").length },
-              { id: "blocked", label: "차단", count: base.filter((t) => scopeOf(t) === "blocked").length },
-              { id: "done", label: "완료", count: base.filter((t) => scopeOf(t) === "done").length },
-            ]}
-          />
-          <span className={styles.vsep} />
-          <CountFilter<TaskKind>
-            label="종류"
-            value={kind}
-            onChange={setKind}
-            options={[
-              { id: "bug", label: "버그", count: base.filter((t) => t.kind === "bug").length },
-              { id: "feature", label: "신규 기능", count: base.filter((t) => t.kind === "feature").length },
-              { id: "change_request", label: "변경 요청", count: base.filter((t) => t.kind === "change_request").length },
-            ]}
-          />
-          <span style={{ flex: 1 }} />
-          <Input size="sm" width="md" leftIcon={<Icon name="search" />} placeholder="제목 · 증상 · 리포터 검색" aria-label="검색" />
-        </div>
-      </Stack>
+      <div className={styles.filters}>
+        <ProjectSelect value={projectFilter} onChange={setProjectFilter} />
+        <WhoSelect value={who} onChange={setWho} />
+        <span className={styles.vsep} />
+        <CountFilter<Scope>
+          value={scope}
+          onChange={setScope}
+          options={[
+            { id: "open", label: "미해결", count: base.filter((t) => scopeOf(t) === "open").length },
+            { id: "review", label: "승인 대기", count: base.filter((t) => scopeOf(t) === "review").length },
+            { id: "blocked", label: "차단", count: base.filter((t) => scopeOf(t) === "blocked").length },
+            { id: "done", label: "완료", count: base.filter((t) => scopeOf(t) === "done").length },
+          ]}
+        />
+        <span className={styles.vsep} />
+        <CountFilter<TaskKind>
+          value={kind}
+          onChange={setKind}
+          options={[
+            { id: "bug", label: "버그", count: base.filter((t) => t.kind === "bug").length },
+            { id: "feature", label: "신규 기능", count: base.filter((t) => t.kind === "feature").length },
+            { id: "change_request", label: "변경 요청", count: base.filter((t) => t.kind === "change_request").length },
+          ]}
+        />
+        <span style={{ flex: 1 }} />
+        <Input size="sm" width="md" leftIcon={<Icon name="search" />} placeholder="제목 · 증상 · 리포터 검색" aria-label="검색" />
+      </div>
 
       {myPending.length > 0 && (
         <Callout tone="brand" variant="outline" icon="seal-check" title={`에이전트가 올린 ${myPending.length}건이 결과 승인을 기다리고 있어요`} actions={<Button size="xs" variant="ghost" asChild><Link href="/approvals">보기 →</Link></Button>} actionsPlacement="right">
@@ -140,7 +131,7 @@ export default function DevListPage() {
         </TableBox>
       </Stack>
 
-      {openTask && <TaskDrawer task={openTask} group={groupOf(openTask.id)} onClose={() => setOpenId(null)} />}
+      {openTask && <DevDrawer task={openTask} group={groupOf(openTask.id)} onClose={() => setOpenId(null)} />}
       {intake && <IntakeDrawer onClose={() => setIntake(false)} defaultProjectId={projectFilter ?? undefined} />}
     </Page>
   );

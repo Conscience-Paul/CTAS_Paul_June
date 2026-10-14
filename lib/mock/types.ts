@@ -243,6 +243,12 @@ export interface AgentRun {
   summary: string;
   diff?: string;
   rejectReason?: string;
+  /** 분석 기록 — 군집 판정·원인·영향 범위 (에이전트 단계) */
+  analysis?: { cluster: string; cause: string; scope: string; risk: string };
+  /** 수정 기록 — 테스트·검토 (배포 단계) */
+  fix?: { tests: string; review: string };
+  /** 배포 결과 (종결 단계) */
+  deploy?: { at: string; env: string; verifiedBy: string; note: string };
 }
 
 export type ApprovalKind = "triage" | "preflight" | "result" | "customer_send";

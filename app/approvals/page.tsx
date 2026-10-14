@@ -43,20 +43,19 @@ const columns = [
 export default function ApprovalsPage() {
   const { approvalDecisions } = usePreview();
   const stateOf = (a: Approval) => approvalDecisions[a.id] ?? a.state;
-  const [kind, setKind] = useState<ApprovalKind | null>(null);
-  const [state, setState] = useState<ApprovalState | null>("pending");
+  const [kind, setKind] = useState<ApprovalKind[]>([]);
+  const [state, setState] = useState<ApprovalState[]>(["pending"]);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
-  const base = approvals.filter((a) => !kind || a.kind === kind);
-  const list = base.filter((a) => !state || stateOf(a) === state).sort((a, b) => b.requestedAt.localeCompare(a.requestedAt));
-  const count = (k: ApprovalKind) => base.filter((a) => a.kind === k && (!state || stateOf(a) === state)).length;
+  const base = approvals.filter((a) => kind.length === 0 || kind.includes(a.kind));
+  const list = base.filter((a) => state.length === 0 || state.includes(stateOf(a))).sort((a, b) => b.requestedAt.localeCompare(a.requestedAt));
+  const count = (k: ApprovalKind) => base.filter((a) => a.kind === k && (state.length === 0 || state.includes(stateOf(a)))).length;
 
   return (
     <Page wide>
       <PageHeader title="승인 목록" lead="사람이 결정하는 네 지점 — 분류 · 사전 점검 · 결과 · 고객 발송. 열어서 근거를 보고 승인하거나 반려합니다." />
       <div className={styles.filters}>
         <CountFilter<ApprovalState>
-          label="상태"
           value={state}
           onChange={setState}
           options={[
@@ -65,9 +64,8 @@ export default function ApprovalsPage() {
             { id: "rejected", label: "반려", count: base.filter((a) => stateOf(a) === "rejected").length },
           ]}
         />
-        <Subtle className={styles.filterLabel}>·</Subtle>
+        <span className={styles.vsep} />
         <CountFilter<ApprovalKind>
-          label="종류"
           value={kind}
           onChange={setKind}
           options={(Object.keys(LABEL.approvalKind) as ApprovalKind[]).map((k) => ({ id: k, label: LABEL.approvalKind[k], count: count(k) }))}

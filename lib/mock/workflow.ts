@@ -424,6 +424,8 @@ export const agentRuns: AgentRun[] = [
     summary: "승인 분기·대리 라우팅 구현. 테스트 18개 통과.",
     diff: "+ src/approval/service.ts (142)\n+ src/approval/delegate.ts (58)\n~ src/notify/slack.ts (+21 -4)\n+ test/approval.spec.ts (210)",
     rejectReason: "대리 승인 시 원 승인자에게 사후 알림이 없음. 9/25 미팅 합의 사항.",
+    analysis: { cluster: "신규 — 유사 사례 없음", cause: "승인 분기 로직 부재. 금액 조건·대리 승인자 라우팅이 요구사항 v3에만 있고 코드에 없음", scope: "approval 서비스 · 알림 모듈 · 승인 대기 화면 API", risk: "Slack 알림에 금액이 포함되면 보안 정책 §5.1 위반" },
+    fix: { tests: "단위 18개 통과 · 회귀 0", review: "이준호 — 대리 승인 사후 알림 누락으로 반려" },
   },
   {
     id: "run-2",
@@ -435,6 +437,8 @@ export const agentRuns: AgentRun[] = [
     plan: "반려 사유 반영: 대리 승인 완료 시 원 승인자 알림 추가\n회귀 테스트 유지",
     summary: "원 승인자 사후 알림 추가. 테스트 21개 통과.",
     diff: "~ src/approval/delegate.ts (+17 -2)\n~ src/notify/slack.ts (+9)\n~ test/approval.spec.ts (+34)",
+    analysis: { cluster: "재시도 — #1 반려 사유 반영", cause: "대리 승인 완료 시 원 승인자 알림 경로 없음", scope: "delegate.ts · slack 템플릿", risk: "없음 — 금액 미포함 유지" },
+    fix: { tests: "단위 21개 통과 · 회귀 0", review: "결과 승인 대기 (김서연)" },
   },
   {
     id: "run-3",
@@ -445,14 +449,15 @@ export const agentRuns: AgentRun[] = [
     agent: "Nora · onprem-runner",
     plan: "1. 10/11 배포 diff 분석\n2. 세션 쿠키 설정 회귀 확인\n3. 수정 + 회귀 테스트",
     summary: "진행 중 — 원인 후보 1건 확인 (SameSite=Strict 변경)",
+    analysis: { cluster: "재접수 1 — 10/11 배포 회귀", cause: "10/11 배포에서 세션 쿠키 SameSite=Strict 로 변경 → 리다이렉트 후 쿠키 미전송", scope: "auth/cookie.ts · 로그인 리다이렉트", risk: "외부 AI 사용 불가 — 온프렘 러너로만 실행" },
   },
 ];
 
 export const devRuns: AgentRun[] = [
-  { id: "run-4", taskId: "t-ims-list-slow", attempt: 1, state: "running", startedAt: "2026-10-12T10:00:00", agent: "Nora · build-agent", plan: "1. 집계 쿼리 프로파일링\n2. 센터별 집계 뷰(materialized) 추가\n3. 부하 테스트", summary: "진행 중 — N+1 확인, 집계 뷰 설계" },
-  { id: "run-5", taskId: "t-ims-alert-slack", attempt: 1, state: "submitted", startedAt: "2026-10-12T15:00:00", agent: "Nora · build-agent", plan: "알림 템플릿 분기(정책 프로필) · 건수+링크", summary: "구현 완료. 테스트 9개 통과.", diff: "+ src/notify/template.ts (64)\n~ src/notify/slack.ts (+12 -3)\n+ test/notify.spec.ts (88)" },
+  { id: "run-4", taskId: "t-ims-list-slow", attempt: 1, state: "running", startedAt: "2026-10-12T10:00:00", agent: "Nora · build-agent", plan: "1. 집계 쿼리 프로파일링\n2. 센터별 집계 뷰(materialized) 추가\n3. 부하 테스트", summary: "진행 중 — N+1 확인, 집계 뷰 설계", analysis: { cluster: "신규 — 성능 사례 없음", cause: "센터별 재고 합계를 센터 수만큼 반복 조회(N+1). 12개 센터 × SKU 필터", scope: "inventory/query.ts · 조회 API", risk: "집계 뷰 갱신 주기와 SAP 5분 동기화 정합" } },
+  { id: "run-5", taskId: "t-ims-alert-slack", attempt: 1, state: "submitted", startedAt: "2026-10-12T15:00:00", agent: "Nora · build-agent", plan: "알림 템플릿 분기(정책 프로필) · 건수+링크", summary: "구현 완료. 테스트 9개 통과.", diff: "+ src/notify/template.ts (64)\n~ src/notify/slack.ts (+12 -3)\n+ test/notify.spec.ts (88)", analysis: { cluster: "신규", cause: "R-04 알림 미구현. 기존 승인 알림 템플릿은 금액 포함", scope: "notify 모듈", risk: "보안 정책 §5.1 — 수량·금액 외부 전송 금지" }, fix: { tests: "단위 9개 통과 · 정책 프로필 2종 스냅샷", review: "결과 승인 대기" } },
   { id: "run-6", taskId: "t-mob-scan", attempt: 1, state: "running", startedAt: "2026-10-10T09:30:00", agent: "Nora · build-agent", plan: "1. 스캔 모듈(카메라 권한)\n2. SKU 조회 연동\n3. 입고 수량 폼", summary: "진행 중 — 스캔 모듈 PR 초안" },
-  { id: "run-7", taskId: "t-sj-pdf", attempt: 1, state: "approved", startedAt: "2026-09-30T11:00:00", agent: "Nora · onprem-runner", plan: "폰트 임베드 + PDF 렌더 테스트", summary: "폰트 누락 수정. 검증 완료.", diff: "+ assets/fonts/NotoSansKR.ttf\n~ src/pdf/render.ts (+6 -1)" },
+  { id: "run-7", taskId: "t-sj-pdf", attempt: 1, state: "approved", startedAt: "2026-09-30T11:00:00", agent: "Nora · onprem-runner", plan: "폰트 임베드 + PDF 렌더 테스트", summary: "폰트 누락 수정. 검증 완료.", diff: "+ assets/fonts/NotoSansKR.ttf\n~ src/pdf/render.ts (+6 -1)", analysis: { cluster: "신규", cause: "서버에 한글 폰트 없음 → PDF 렌더러가 대체 폰트로 깨진 글리프 출력", scope: "pdf/render.ts · 폰트 자산", risk: "없음" }, fix: { tests: "PDF 스냅샷 3건 통과", review: "이준호 승인 10/1" }, deploy: { at: "2026-10-01T18:00:00", env: "운영", verifiedBy: "세종 IT운영 (10/2)", note: "고객 확인 — 명세서 한글 정상. 재접수 없음" } },
 ];
 agentRuns.push(...devRuns);
 
