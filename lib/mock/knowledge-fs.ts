@@ -83,7 +83,8 @@ export const kEntriesIn = (folderId: string | null): KEntry[] => {
   if (f.special === "patterns") return patterns.map((p) => ({ type: "pattern", id: p.id, item: p }));
   if (f.special === "templates") return templates.map((t) => ({ type: "template", id: t.id, item: t }));
   if (f.special === "deliverables") return deliverables.filter((d) => d.projectId === f.projectId).map((d) => ({ type: "deliverable", id: d.id, item: d }));
-  if (f.special === "runs") return latestRuns(f.projectId!).map((r) => ({ type: "run", id: r.id, item: r }));
+  // 실행 결과는 문서가 된 것만 — 제출됨(= draft) · 승인됨(= 배포됨). 대기·실행 중·실패·반려는 개발 › 업무에서만
+  if (f.special === "runs") return latestRuns(f.projectId!).filter((r) => r.state === "submitted" || r.state === "approved").map((r) => ({ type: "run", id: r.id, item: r }));
   if (f.contextKind) return contextItems.filter((c) => c.projectId === f.projectId && c.kind === f.contextKind).map((c) => ({ type: "context", id: c.id, item: c }));
   return [];
 };
@@ -94,16 +95,45 @@ export const kCountIn = (folderId: string): number => {
   return kEntriesIn(folderId).length + children.reduce((s, c) => s + kCountIn(c.id), 0);
 };
 
-/** 파일 아이콘용 확장자 */
-export const kExt = (e: KEntry): string => {
-  if (e.type === "context") {
-    const m: Record<ContextKind, string> = { conversation: "txt", customer_doc: "pdf", our_doc: "docx", meeting_note: "md", requirement: "docx", decision: "md", change: "diff" };
-    return m[e.item.kind];
+/** id 로 항목과 그 항목이 들어 있는 폴더를 찾는다 — 사이드바 트리·본문 뷰어 공용 */
+export const findKEntry = (id: string): { entry: KEntry; folderId: string } | undefined => {
+  for (const f of kFolders) {
+    const entry = kEntriesIn(f.id).find((e) => e.id === id);
+    if (entry) return { entry, folderId: f.id };
   }
-  if (e.type === "deliverable") return e.item.kind === "wbs" ? "xlsx" : "docx";
-  if (e.type === "run") return "diff";
-  if (e.type === "pattern") return "md";
-  return "dotx";
+  return undefined;
+};
+
+/** 파일 아이콘용 확장자 */
+// 문서는 배포 서비스(Google Docs·Notion …)와 무관하게 일반 문서 아이콘 하나로. 형식이 실제로 다른 고객 PDF 만 구분
+export const kExt = (e: KEntry): string => {
+  if (e.type === "context" && e.item.kind === "customer_doc") return "pdf";
+  return "file";
+};
+
+/**
+ * 배포 위치 — 승인된 버전이 나가는 곳. 서비스마다 다를 수 있어 이름과 링크를 같이 든다.
+ * 쓰기 가능한 원본(Google Docs 등)이면 그 문서를 덮어쓰고, 읽기 전용 출처(Slack·카카오·녹취…)면
+ * 지식 폴더 구조 그대로 만든 Google Docs 파일로 나간다.
+ */
+export interface DeployTarget {
+  service: string;
+  url: string;
+  /** 파일 이름 또는 경로 */
+  where: string;
+}
+
+/** 배포(쓰기)가 가능한 출처 → 서비스 이름. Notion 등이 붙으면 여기에 추가 */
+const WRITABLE: Partial<Record<SourceKind, string>> = { gdrive: "Google Docs" };
+
+export const deployTargetOf = (e: KEntry): DeployTarget => {
+  const o = kOrigin(e);
+  const title = findDocLike(e.id)?.title ?? e.id;
+  const service = o.kind !== "ctas" ? WRITABLE[o.kind] : undefined;
+  if (service) return { service, url: o.url, where: title };
+  const folderId = findKEntry(e.id)?.folderId;
+  const where = ["CTAS", ...(folderId ? kFolderPath(folderId).map((f) => f.name) : []), title].join(" › ");
+  return { service: "Google Docs", url: `https://docs.google.com/document/d/ctas-${e.id}`, where };
 };
 
 /** 원본 위치 — 소스 종류별 목 URL. 아이콘만 보여주고 새 탭으로 */

@@ -1,0 +1,757 @@
+/* 타임라인 보드 — 목록(날짜 행 × [마일스톤 | 타임라인]) / 트랙(기간 전체 시간축 × 행, ains 방식). 위치는 비율(%), 색·크기는 토큰. */
+
+/* ── 트랙 ── */
+.track {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 라벨 칸 | 시간축 칸 */
+.trackRow {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  border-top: 1px solid var(--border);
+}
+
+.trackRow[data-axis] {
+  height: var(--control-h-md);
+  border-top: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.trackRow[data-ms] {
+  background: var(--bg-subtle);
+  border-bottom: 2px solid var(--border-strong);
+}
+
+.trackLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-strong);
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+/* 점이 양 끝에서 잘리지 않게 좌우 여백 */
+.trackLane {
+  position: relative;
+  margin: 0 var(--space-4);
+}
+
+.trackTick {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+  white-space: nowrap;
+}
+
+.trackTick[data-today] {
+  color: var(--primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.trackTodayLabel {
+  position: absolute;
+  bottom: 0;
+  transform: translateX(-50%);
+  font-size: var(--text-2xs);
+  color: var(--primary);
+}
+
+.trackGrid {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+  opacity: 0.6;
+}
+
+.trackToday {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--primary);
+  z-index: 1;
+}
+
+/* 사건 점 — 유형 아이콘·색. 고르면 채워진다 */
+.trackDot {
+  position: absolute;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; /* lint-hardcoded: ignore */
+  height: 22px; /* lint-hardcoded: ignore */
+  padding: 0;
+  transform: translateX(-50%);
+  background: var(--bg);
+  border: 1.5px solid currentColor;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: transform var(--duration-fast, 120ms);
+}
+
+.trackDot:hover {
+  transform: translateX(-50%) scale(1.15);
+  z-index: 3;
+}
+
+.trackDot[data-picked] {
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 25%, transparent);
+  z-index: 3;
+}
+
+.trackDot[data-picked] > svg {
+  color: var(--bg);
+}
+
+.trackDot[data-dim] {
+  opacity: 0.25;
+}
+
+.trackDot[data-flash] {
+  animation: dotFlash 1.8s ease-out;
+}
+
+@keyframes dotFlash {
+  0%, 40% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--primary) 35%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* 마일스톤 — 마름모 + 짧은 제목 */
+.trackMs {
+  position: absolute;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 12rem;
+  height: 22px; /* lint-hardcoded: ignore */
+  padding: 0 var(--space-2) 0 var(--space-1);
+  transform: translateX(-10px); /* lint-hardcoded: ignore */
+  font: inherit;
+  font-size: var(--text-2xs);
+  color: var(--fg-strong);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.trackMs[data-selected] {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.trackMsText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 고른 점의 상세 */
+.trackDetail {
+  border-top: 1px solid var(--border);
+  padding: var(--space-2) var(--space-3);
+  min-height: var(--control-h-lg);
+}
+
+.trackHint {
+  display: block;
+  padding: var(--space-2) 0;
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+}
+
+/* 트랙 상세는 시간 칸에 날짜도 — 폭을 넓힌다 */
+.event[data-wide-time] {
+  --time-w: 5.5rem;
+}
+
+.chipText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.chipVer {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+  flex-shrink: 0;
+}
+
+.diamond {
+  width: var(--space-2);
+  height: var(--space-2);
+  flex-shrink: 0;
+  transform: rotate(45deg);
+  border-radius: var(--radius-xs);
+  background: var(--fg-muted);
+}
+
+.diamond[data-state="done"] { background: var(--success); }
+.diamond[data-state="planned"] { background: var(--info); }
+.diamond[data-state="at_risk"] { background: var(--warning); }
+.diamond[data-state="missed"] { background: var(--destructive); }
+
+/* ── 도구줄: 타임라인 레인 필터 칩 + 모두 접기 ── */
+.tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 0;
+}
+
+.toolLabel {
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+  margin-right: var(--space-1);
+}
+
+/* 칩 — 전체가 켜진 상태에서 누르면 그 레인만, 아니면 켜고 끄기 */
+.filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--control-h-sm);
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.filter:hover {
+  border-color: var(--border-strong);
+  color: var(--fg-strong);
+}
+
+.filter[data-active] {
+  color: var(--fg-strong);
+  background: var(--bg-subtle);
+  border-color: var(--fg-strong);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+}
+
+/* ── 목록 — 날짜 한 줄에 [날짜 | 마일스톤 | 타임라인]. 같은 날은 같은 행 ── */
+.board {
+  --board-cols: 7.5rem minmax(14rem, 22rem) minmax(0, 1fr);
+}
+
+.boardHead,
+.boardRow {
+  display: grid;
+  grid-template-columns: var(--board-cols);
+}
+
+.boardHead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-muted);
+}
+
+.boardHead > span {
+  padding: var(--space-2) var(--space-3);
+}
+
+.boardHead > span + span,
+.boardRow > * + * {
+  border-left: 1px solid var(--border);
+}
+
+.boardRow + .boardRow {
+  border-top: 1px solid var(--border);
+}
+
+.boardRow[data-today] {
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
+}
+
+.boardRow[data-selected] {
+  box-shadow: inset 2px 0 0 var(--primary);
+}
+
+/* 오늘(기간 끝) 위 — 다음 마일스톤까지 더 보기 */
+.showMore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-muted);
+  background: var(--bg);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.showMore[data-in-board] {
+  border: 0;
+  border-bottom: 1px dashed var(--border);
+  border-radius: 0;
+  background: var(--bg-subtle);
+}
+
+.showMore:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.showMoreTarget {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: var(--font-weight-normal, 400);
+  color: var(--fg-subtle);
+}
+
+/* 날짜 칸 — 누르면 그 행(마일스톤·타임라인 둘 다) 접기 */
+/* 화살표 | 날짜, 그 아래 "오늘" — 칸을 넘치지 않게 두 줄 */
+.dateCell {
+  display: grid;
+  grid-template-columns: var(--space-4) minmax(0, 1fr);
+  align-items: center;
+  align-content: start;
+  column-gap: var(--space-1);
+  row-gap: var(--space-1);
+  padding: var(--space-3) var(--space-2) var(--space-3) var(--space-3);
+  background: none;
+  border: 0;
+  color: var(--fg-muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dateCell:hover {
+  color: var(--fg-strong);
+}
+
+.dateCaret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dayLabel {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-strong);
+  white-space: nowrap;
+}
+
+.boardRow[data-today] .dayLabel {
+  color: var(--primary);
+}
+
+.todayTag {
+  grid-column: 2;
+  justify-self: start;
+  padding: 0 var(--space-2);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.6;
+  color: var(--primary);
+  background: var(--primary-subtle);
+  border: 1px solid var(--primary-border-color);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.msCell,
+.docCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  min-width: 0;
+}
+
+/* 접힌 행 — 개수와 레인 색만 */
+.peek {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+}
+
+/* 마일스톤 한 건 */
+.ms {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-1);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.ms:hover,
+.ms[data-selected] {
+  background: var(--bg-subtle);
+}
+
+.msText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.msTitle {
+  font-size: var(--text-sm);
+  color: var(--fg-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ms[data-selected] .msTitle {
+  color: var(--primary);
+}
+
+.msSub {
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectTag {
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+  padding: 0 var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 타임라인 사건 한 건 — 1줄(유형 · 제목 ……… 메타) + 아래 연결 줄. 사건 사이엔 여백과 옅은 구분선 */
+.docCell {
+  gap: 0;
+  padding-block: 0;
+}
+
+.event {
+  --time-w: 2.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.event + .event {
+  border-top: 1px dashed var(--border);
+}
+
+.eventHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* 어떤 행위인지 — 유형 색 배지. 폭을 맞춰 제목이 한 줄로 정렬되게 */
+.typePill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+  min-width: 6.5rem;
+  height: var(--control-h-xs, 1.5rem);
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--lane);
+  background: color-mix(in srgb, var(--lane) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--lane) 30%, transparent);
+  border-radius: var(--radius-full);
+}
+
+/* 무엇 — 제목이 주인공 */
+.eventTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-strong);
+  text-align: left;
+  cursor: pointer;
+}
+
+.eventTitle:hover .eventText {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.eventText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* 누가 · 어디서 · 프로젝트 · 시간 — 오른쪽에 작게 */
+.eventMeta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: var(--control-h-xs, 1.5rem); /* 메타가 비어도 겹쳐 뜨는 흐름 버튼이 잘리지 않게 */
+  min-height: var(--control-h-xs, 1.5rem);
+  gap: var(--space-2);
+  flex-shrink: 0;
+  max-width: 45%;
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 시간 — 유형 배지 앞, 폭 고정으로 세로 정렬 */
+.eventTime {
+  flex-shrink: 0;
+  width: var(--time-w);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+/* 흐름 보기 버튼 — 메타 맨 오른쪽 위에 겹쳐 뜬다. 행 hover 시에만, 켜져 있으면 항상 */
+.flowBtn {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-h-xs, 1.5rem);
+  height: var(--control-h-xs, 1.5rem);
+  padding: 0;
+  color: var(--fg-strong);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast, 120ms);
+}
+
+.event:hover .flowBtn,
+.flowBtn:focus-visible,
+.flowBtn[data-on] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.flowBtn:hover,
+.flowBtn[data-on] {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* 연결 줄: 근거 · 산출물 · 다음 — 배지 폭만큼 들여쓰고 왼쪽 연결선 */
+.eventLinks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-left: calc(var(--time-w) + var(--space-2) + 6.5rem / 2);
+  padding-left: calc(6.5rem / 2 + var(--space-2) - var(--space-0));
+  border-left: 2px solid var(--border);
+}
+
+/* 라벨 칸 | 칩 칸 — 칩이 여러 줄이어도 라벨 밑으로 파고들지 않는다 */
+.linkGroup {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--space-2);
+}
+
+.linkLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--control-h-xs, 1.5rem);
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
+
+.linkChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.linkGroup[data-group="next"] .linkLabel {
+  color: var(--primary);
+}
+
+.sourceChip,
+.outputChip,
+.affects,
+.moreBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 20rem;
+  height: var(--control-h-xs, 1.5rem);
+  padding: 0 var(--space-2);
+  font: inherit;
+  font-size: var(--text-xs);
+  border-radius: var(--radius-full);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.sourceChip {
+  color: var(--fg);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+}
+
+.outputChip {
+  color: var(--fg-strong);
+  background: var(--bg);
+  border: 1px solid color-mix(in srgb, var(--success) 50%, transparent);
+}
+
+.affects {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+.moreBtn {
+  color: var(--fg-muted);
+  background: none;
+  border: 1px dashed var(--border-strong);
+}
+
+.sourceChip:hover,
+.outputChip:hover,
+.affects:hover,
+.moreBtn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* 칩 안: 대상 사건의 유형 아이콘 · 날짜 */
+.chipLane {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* 타임라인에 없는 문서·업무 — 회색 문서 아이콘 */
+.chipLane[data-doc] {
+  color: var(--fg-subtle);
+}
+
+.chipWhen {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+}
+
+/* 연결로 이동해 온 사건 — 잠깐 강조 */
+@keyframes flash {
+  0%, 30% { background: color-mix(in srgb, var(--primary) 18%, transparent); box-shadow: inset 2px 0 0 var(--primary); }
+  100% { background: transparent; box-shadow: inset 2px 0 0 transparent; }
+}
+
+.event[data-flash] {
+  animation: flash 1.8s ease-out;
+  border-radius: var(--radius-sm);
+}
+
+/* 흐름 강조 — 이어지지 않은 사건은 흐리게, 고른 사건은 테두리 */
+.event[data-dim] {
+  opacity: 0.3;
+}
+
+.event[data-flow] {
+  box-shadow: inset 2px 0 0 var(--primary);
+  background: var(--bg-subtle);
+}
+
+.flowBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--fg-strong);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-md);
+}
+
+.flowBar > :last-child {
+  margin-left: auto;
+}

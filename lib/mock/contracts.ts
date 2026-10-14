@@ -1,8 +1,8 @@
 import type { ContextVersion, Role, SourceKind } from "./types";
 
 /**
- * 운영 › 계약·문서 — 높은 권한이 필요한 문서함.
- * 폴더(고객사 › 프로젝트 › …) 라이브러리 + 원본 링크 + 버전 + 전달 상태 + 서류 일정.
+ * 지식 › 계약문서 — 관리자 전용 보안 문서함.
+ * 폴더(고객사 › 프로젝트 › …) 라이브러리 + 원본 링크 + 버전 + 전달 상태.
  */
 export type ContractKind = "contract" | "quote" | "nda" | "sla" | "amendment" | "template";
 export type ContractStatus = "draft" | "review" | "signed" | "expired";
@@ -336,27 +336,4 @@ export const docsInFolder = (folderId: string | null): ContractDoc[] => {
     });
   }
   return contracts.filter((c) => ids.has(c.folderId));
-};
-
-/** 서류 일정 — 발송 예정 · 검토 기한 · 만료 · 갱신 협의 */
-export interface DocEvent {
-  docId: string;
-  at: string;
-  kind: "send" | "review" | "expire" | "renew";
-  label: string;
-}
-
-export const docEvents = (): DocEvent[] => {
-  const ev: DocEvent[] = [];
-  contracts.forEach((c) => {
-    if (c.delivery.scheduledAt) ev.push({ docId: c.id, at: c.delivery.scheduledAt, kind: "send", label: `발송 예정 → ${c.delivery.to ?? ""}` });
-    if (c.reviewDue) ev.push({ docId: c.id, at: c.reviewDue, kind: "review", label: "내부 검토 기한" });
-    if (c.expiresAt && c.status === "signed") {
-      ev.push({ docId: c.id, at: c.expiresAt, kind: "expire", label: "만료" });
-      const d = new Date(c.expiresAt);
-      d.setDate(d.getDate() - 45);
-      ev.push({ docId: c.id, at: d.toISOString().slice(0, 10), kind: "renew", label: "갱신 협의 시작 (만료 45일 전)" });
-    }
-  });
-  return ev.sort((a, b) => a.at.localeCompare(b.at));
 };

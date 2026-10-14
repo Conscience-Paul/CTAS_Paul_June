@@ -95,8 +95,8 @@ export function IntakeDrawer({ onClose, defaultProjectId }: { onClose: () => voi
       ],
       contextIds: picked,
       timeline: [
-        { at: "2026-10-14", who: reporter === "external" ? "고객 포털" : "김서연", text: "접수" },
-        { at: "2026-10-14", who: "Nora", text: agent ? "군집 판정 — 유사 사례 없음 → 신규. 분류(사람) 대기" : "에이전트 미배정 — 수동 처리" },
+        { at: "2026-10-14", who: reporter === "external" ? "고객 포털" : "김서연", text: "접수", kind: "create" },
+        { at: "2026-10-14", who: "Nora", text: agent ? "군집 판정 — 유사 사례 없음 → 신규. 분류(사람) 대기" : "에이전트 미배정 — 수동 처리", kind: "triage" },
       ],
     };
     addTask(task);

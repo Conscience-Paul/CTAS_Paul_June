@@ -35,6 +35,17 @@ interface PreviewState {
   extraVersions: Record<string, ContextVersion[]>;
   addVersion: (ownerId: string, v: Omit<ContextVersion, "v">) => number;
 
+  /**
+   * 문서당 draft 하나. 사람·Nora 의 수정은 전부 여기에 덮어써지고, 승인 전엔 Google Drive 에 안 나간다.
+   * 승인(publishDraft) → 다음 버전으로 확정 + Drive 배포. 원본 쪽 수정은 수집되어 addVersion 으로 들어오고 draft 는 그대로.
+   */
+  drafts: Record<string, Omit<ContextVersion, "v">>;
+  saveDraft: (ownerId: string, d: Omit<ContextVersion, "v">) => void;
+  discardDraft: (ownerId: string) => void;
+  publishDraft: (ownerId: string, drivePath: string) => void;
+  /** Drive 에 배포된 적 있는 문서 → 그 파일 경로. 원본이 없던 문서는 첫 승인 때 생긴다. */
+  drivePaths: Record<string, string>;
+
   riskStatus: Record<string, "open" | "acknowledged" | "dismissed" | "resolved">;
   setRiskStatus: (id: string, s: "open" | "acknowledged" | "dismissed" | "resolved") => void;
 
@@ -53,6 +64,17 @@ interface PreviewState {
   /** 마지막으로 본 프로젝트 — 지식·개발 패널의 "현재 프로젝트" 기준 */
   projectId: string;
   setProjectId: (id: string) => void;
+
+  /** 지식 문서함 — 사이드바 트리와 본문이 공유하는 현재 폴더·열린 문서 */
+  kFolderId: string | null;
+  setKFolderId: (id: string | null) => void;
+  contractFolderId: string | null;
+  setContractFolderId: (id: string | null) => void;
+  openDocId: string | null;
+  setOpenDocId: (id: string | null) => void;
+  /** 근거 문서 사이드 패널 — AI 패널처럼 화면 오른쪽에 붙는다 */
+  peekDocId: string | null;
+  setPeekDocId: (id: string | null) => void;
 
   aiOpen: boolean;
   setAiOpen: (open: boolean) => void;
@@ -79,6 +101,39 @@ interface PreviewState {
 
 const Ctx = createContext<PreviewState | null>(null);
 
+/** 프리뷰 시작 시 열려 있는 draft — 배너·draft 배지·변경 비교·승인 흐름을 바로 볼 수 있게. 회의록은 전부 draft 가 있다 */
+const nora = { kind: "ai", model: "Nora" } as const;
+const SEED_DRAFTS: Record<string, Omit<ContextVersion, "v">> = {
+  "ctx-meet-kickoff": {
+    at: "2026-10-13T09:00:00",
+    author: nora,
+    summary: "액션 진행 상태 갱신 — 요구사항 초안·SAP 명세 완료 표시",
+    basedOn: ["ctx-req-spec"],
+    body: "## 참석\n한빛유통 IT팀장 박정우, 물류운영팀 과장 김하늘 / CT 김서연(PM), 이준호\n\n## 결정\n- 1차 범위: 12개 센터 재고 통합 조회, 센터 간 이동, SAP 연동\n- **결제·정산은 10월 2주차에 범위 포함 여부 재논의** (고객 요청)\n\n## 액션\n- ~~CT: 요구사항 정의서 초안 7/15까지~~ ✅ 7/15 v1 공유\n- ~~한빛: SAP 인터페이스 명세 7/10까지 전달~~ ✅ 7/11 수령",
+  },
+  "ctx-meet-0925": {
+    at: "2026-10-13T09:05:00",
+    author: nora,
+    summary: "결정 사항 정리 + 대리 승인 사후 알림 추가 (AgentRun #1 반려 사유 반영)",
+    basedOn: ["ctx-req-spec"],
+    body: "## 논의\n- 센터 간 재고 이동 시 **센터장 승인** 필요 여부 → 한빛: 500만원 이상만 승인\n- 승인자 부재 시 대리 승인 가능해야 함\n- 대리 승인 시 **원 승인자에게 사후 알림** 필요 (합의)\n\n## 결정\n- 승인 기준: 이동 금액 500만원 이상\n- 대리 승인 허용, 원 승인자 사후 알림 필수\n\n## 액션\n- ~~CT: 승인 흐름 설계안 10/2 공유~~ ✅ 10/2 공유",
+  },
+  "ctx-meet-1009": {
+    at: "2026-10-13T09:10:00",
+    author: nora,
+    summary: "검수 기준서 미수령 반영, 결제 범위 논의 10/14 확정",
+    basedOn: [],
+    body: "## 논의\n- 1차 검수 10/17 예정. 검수 기준서는 한빛 측이 10/11까지 전달하기로 함\n- 결제·정산 범위 논의는 **10/14 (화) 14:00** 로 확정 (한빛 재무팀 참석)\n\n## 액션\n- 한빛: 검수 기준서 10/11 — ⚠️ 10/13 현재 미수령, 리마인드 필요\n- CT: 결제 모듈 요구사항 질문 리스트 10/13",
+  },
+  "ctx-req-spec": {
+    at: "2026-10-13T10:20:00",
+    author: nora,
+    summary: "R-03 SAP 동기화 주기 15분 → 5분 (PR #142), BASIS 팀 확인 조건",
+    basedOn: [],
+    body: "# 요구사항 정의서 v4\n\n## R-01 재고 통합 조회\n12개 센터의 재고를 SKU 단위로 실시간 조회…\n\n## R-02 센터 간 재고 이동\n이동 요청 → 승인 → 출고 → 입고 확인 4단계.\n- 승인은 **이동 금액 500만원 이상**일 때만 필요\n- 승인자 부재 시 **대리 승인자** 지정 가능\n\n## R-03 SAP 연동\n재고 수량 양방향 동기화 (**5분 주기**, PR #142)\n- 단, SAP RFC 호출량 제한에 따라 **한빛 BASIS 팀 확인**을 조건으로 함\n\n## R-04 재고 부족 알림\n안전 재고 이하 시 담당자 알림…",
+  },
+};
+
 export function PreviewProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role>("pm");
   const [approvalDecisions, setDecisions] = useState<Record<string, ApprovalState>>({});
@@ -86,6 +141,11 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
   const [riskStatus, setRiskStatusMap] = useState<PreviewState["riskStatus"]>({});
   const [resolvedConflicts, setResolved] = useState<Record<string, boolean>>({});
   const [projectId, setProjectId] = useState("p-hanbit-ims");
+  // 처음엔 현재 프로젝트 폴더에서 시작 — 매번 루트부터 내려가지 않도록
+  const [kFolderId, setKFolderId] = useState<string | null>("kf-p-hanbit-ims");
+  const [contractFolderId, setContractFolderId] = useState<string | null>(null);
+  const [openDocId, setOpenDocId] = useState<string | null>(null);
+  const [peekDocId, setPeekDocId] = useState<string | null>(null);
   const [taskGroups, setTaskGroups] = useState<TaskGroup[]>([]);
   // 목 배열(tasks)은 모듈 싱글턴이라 push 로 전 화면에 즉시 보인다. 리렌더 신호만 상태로.
   const [taskVersion, setTaskVersion] = useState(0);
@@ -125,6 +185,22 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
     });
     return next;
   }, []);
+
+  const [drafts, setDrafts] = useState<Record<string, Omit<ContextVersion, "v">>>(SEED_DRAFTS);
+  const [drivePaths, setDrivePaths] = useState<Record<string, string>>({});
+  const saveDraft = useCallback((ownerId: string, d: Omit<ContextVersion, "v">) => {
+    setDrafts((m) => ({ ...m, [ownerId]: d }));
+  }, []);
+  const discardDraft = useCallback((ownerId: string) => {
+    setDrafts((m) => { const n = { ...m }; delete n[ownerId]; return n; });
+  }, []);
+  const publishDraft = useCallback((ownerId: string, drivePath: string) => {
+    const d = drafts[ownerId];
+    if (!d) return;
+    addVersion(ownerId, { ...d, at: new Date().toISOString() });
+    discardDraft(ownerId);
+    setDrivePaths((m) => ({ ...m, [ownerId]: drivePath }));
+  }, [drafts, addVersion, discardDraft]);
 
   const setRiskStatus = useCallback((id: string, s: PreviewState["riskStatus"][string]) => {
     setRiskStatusMap((m) => ({ ...m, [id]: s }));
@@ -173,6 +249,11 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
       decideApproval,
       extraVersions,
       addVersion,
+      drafts,
+      saveDraft,
+      discardDraft,
+      publishDraft,
+      drivePaths,
       riskStatus,
       setRiskStatus,
       resolvedConflicts,
@@ -184,6 +265,14 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
       removeTaskGroup,
       projectId,
       setProjectId,
+      kFolderId,
+      setKFolderId,
+      contractFolderId,
+      setContractFolderId,
+      openDocId,
+      setOpenDocId,
+      peekDocId,
+      setPeekDocId,
       aiOpen,
       setAiOpen,
       readNotifs,
@@ -199,7 +288,7 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
       mentionDoc,
       registerMentionHandler,
     }),
-    [role, approvalDecisions, decideApproval, extraVersions, addVersion, riskStatus, setRiskStatus, resolvedConflicts, resolveConflict, addTask, taskVersion, taskGroups, addTaskGroup, removeTaskGroup, projectId, aiOpen, readNotifs, markRead, markAllRead, previewOpen, previewUrl, openPreview, closePreview, askAi, registerAskHandler, mentionDoc, registerMentionHandler],
+    [role, approvalDecisions, decideApproval, extraVersions, addVersion, drafts, saveDraft, discardDraft, publishDraft, drivePaths, riskStatus, setRiskStatus, resolvedConflicts, resolveConflict, addTask, taskVersion, taskGroups, addTaskGroup, removeTaskGroup, projectId, kFolderId, contractFolderId, openDocId, peekDocId, aiOpen, readNotifs, markRead, markAllRead, previewOpen, previewUrl, openPreview, closePreview, askAi, registerAskHandler, mentionDoc, registerMentionHandler],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

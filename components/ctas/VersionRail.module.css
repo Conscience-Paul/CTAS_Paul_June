@@ -26,6 +26,8 @@
 .item[data-active] {
   background: var(--bg-subtle);
   border-color: var(--border);
+  /* 선택 버전을 왼쪽 강조선으로 분명하게 */
+  box-shadow: inset 2px 0 0 var(--primary); /* lint-hardcoded: ignore */
 }
 
 .v {
@@ -73,6 +75,29 @@
   flex-wrap: wrap;
   gap: var(--space-1);
   margin-top: var(--space-1);
+  min-width: 0;
+}
+
+.basisBtn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.basedOnLabel {
+  align-self: center;
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+}
+
+/* 좁은 레일에서도 칩이 칸을 넘지 않게 */
+.basedOn > * {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .new {

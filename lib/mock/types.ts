@@ -221,8 +221,21 @@ export interface Task {
   preflight: PreflightCheck[];
   /** 근거 컨텍스트 항목 */
   contextIds: string[];
-  timeline: { at: string; who: string; text: string }[];
+  timeline: { at: string; who: string; text: string; kind: TaskEventKind }[];
 }
+
+/**
+ * 업무 이력 한 줄의 종류 — 운영 › 타임라인의 사건 유형을 정한다.
+ *   개발: pr · submit(Nora 제출) · reject(리뷰 반려) · analysis(원인 분석)
+ *   고객 피드백: verify(고객 검수)
+ *   이슈: blocked · risk · delay · incident(장애 접수)
+ *   타임라인 제외(관리 기록): create · start · triage · merge · comm
+ */
+export type TaskEventKind =
+  | "create" | "start" | "triage" | "merge" | "comm"
+  | "pr" | "submit" | "reject" | "analysis"
+  | "verify"
+  | "blocked" | "risk" | "delay" | "incident";
 
 export type RunState =
   | "queued"
