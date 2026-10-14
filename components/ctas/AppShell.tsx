@@ -10,17 +10,18 @@
  */
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import {
   AppFrame,
   Avatar,
   Badge,
   Breadcrumb,
+  Button,
+  DropdownMenu,
   Icon,
   IconButton,
   Input,
-  Select,
   Sidebar,
   Tooltip,
   Topbar,
@@ -28,17 +29,20 @@ import {
 } from "@/components/ctas/ctds";
 import {
   LABEL,
+  NOTIFICATION_ICON,
   approvals,
+  fmtDateTime,
+  notifications,
   byProject,
   getContext,
   getDeliverable,
   getPattern,
   getProject,
   getTask,
-  type Role,
 } from "@/lib/mock";
 import { usePreview } from "@/lib/preview-state";
 import { AiPanel } from "./AiPanel";
+import { PreviewPane } from "./PreviewPane";
 import styles from "./AppShell.module.css";
 
 type Area = "dashboard" | "ops" | "knowledge" | "dev" | "settings";
@@ -120,7 +124,9 @@ function Crumbs() {
     if (seg[1] && sub[seg[1]]) crumbs.push({ label: sub[seg[1]], href: `/knowledge/${seg[1]}` });
     if (seg[2]) crumbs.push({ label: seg[2] === "promote" ? "패턴 승격" : getPattern(seg[2])?.title ?? seg[2] });
   } else if (seg[0] === "dev") {
-    crumbs.push({ label: "개발" });
+    crumbs.push({ label: "개발", href: "/dev" });
+    const sub: Record<string, string> = { agents: "에이전트", deploy: "배포", closed: "종결" };
+    if (seg[1] && sub[seg[1]]) crumbs.push({ label: sub[seg[1]] }); else crumbs[crumbs.length - 1] = { label: "개발 목록" };
   } else if (seg[0] === "settings") {
     crumbs.push({ label: "설정", href: "/settings" });
     const sub: Record<string, string> = { org: "조직", roles: "역할·권한", customers: "고객사·격리", compliance: "컴플라이언스", integrations: "연동" };
@@ -170,7 +176,6 @@ function ShellSidebar() {
 
   const pid = projectId;
   const pendingApprovals = approvals.filter((a) => (approvalDecisions[a.id] ?? a.state) === "pending").length;
-  const openConflicts = byProject.conflicts(pid).filter((c) => !c.resolved).length;
   const blockedTasks = byProject.tasks(pid).filter((t) => t.state === "blocked").length;
 
   const is = (href: string) => pathname === href || pathname === href + "/";
@@ -227,11 +232,13 @@ function ShellSidebar() {
       </>
     ),
     // 개발 = 전 프로젝트 허브. 프로젝트 선택은 허브 안의 필터로, 사이드바엔 두지 않는다.
+    // 개발 = orbit Operate 의 4단계. 충돌은 Nora 에이전트가 처리하므로 메뉴에 두지 않는다.
     dev: (
       <Sidebar.Section>
-        {item("/dev", "rows", "유지보수·개발", { exact: true })}
-        {item(`/projects/${pid}/tasks`, "list", "업무", { count: blockedTasks, tone: "destructive" })}
-        {item(`/projects/${pid}/conflicts`, "split-horizontal", "충돌", { count: openConflicts, tone: "warning" })}
+        {item("/dev", "rows", "개발 목록", { exact: true, count: blockedTasks, tone: "destructive" })}
+        {item("/dev/agents", "waveform", "에이전트")}
+        {item("/dev/deploy", "upload-simple", "배포")}
+        {item("/dev/closed", "check-circle", "종결")}
       </Sidebar.Section>
     ),
     settings: (
@@ -308,26 +315,51 @@ function ShellSidebar() {
 
 /* ── Topbar ────────────────────────────────────── */
 function ShellTopbar() {
-  const { role, setRole, aiOpen, setAiOpen, approvalDecisions } = usePreview();
-  const pending = approvals.filter((a) => (approvalDecisions[a.id] ?? a.state) === "pending").length;
+  const router = useRouter();
+  const { aiOpen, setAiOpen, previewOpen, openPreview, closePreview, readNotifs, markRead, markAllRead } = usePreview();
+  const unread = notifications.filter((n) => !(readNotifs[n.id] ?? n.read)).length;
+  const sorted = [...notifications].sort((x, y) => y.at.localeCompare(x.at));
   return (
     <Topbar size="sm">
       <Crumbs />
       <Topbar.Spacer />
       <div className={styles.topRight}>
-        <div className={styles.roleSwitch}>
-          <Icon name="eye" size={14} />
-          <Select size="sm" variant="line" width={140} value={role} onValueChange={(v) => setRole(v as Role)}>
-            <Select.Trigger aria-label="역할로 보기" />
-            <Select.Content>
-              <Select.Item value="admin">관리자로 보기</Select.Item>
-              <Select.Item value="pm">PM으로 보기</Select.Item>
-              <Select.Item value="engineer">엔지니어로 보기</Select.Item>
-              <Select.Item value="viewer">뷰어로 보기</Select.Item>
-            </Select.Content>
-          </Select>
-        </div>
-        <IconButton size="sm" variant="ghost" icon={<Icon name="bell" />} aria-label={`알림 ${pending}건`} />
+        <DropdownMenu>
+          <DropdownMenu.Trigger asChild>
+            <span className={styles.bellWrap}>
+              <IconButton size="md" variant="ghost" icon={<Icon name="bell" size={22} weight={unread > 0 ? "fill" : "regular"} />} aria-label={`알림 ${unread}건 안 읽음`} />
+              {unread > 0 && <span className={styles.bellBadge}>{unread}</span>}
+            </span>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="end" className={styles.notifMenu}>
+            <div className={styles.notifHead}>
+              <span>알림</span>
+              <Button size="xs" variant="ghost" onClick={markAllRead} disabled={unread === 0}>모두 읽음</Button>
+            </div>
+            {sorted.map((n) => {
+              const isRead = readNotifs[n.id] ?? n.read;
+              return (
+                <DropdownMenu.Item
+                  key={n.id}
+                  className={styles.notifItem}
+                  data-unread={!isRead || undefined}
+                  leadingActions={[<Icon key="i" name={NOTIFICATION_ICON[n.kind]} size={16} />]}
+                  description={`${n.body} · ${fmtDateTime(n.at)}`}
+                  onSelect={() => { markRead(n.id); router.push(n.href); }}
+                >
+                  {n.title}
+                </DropdownMenu.Item>
+              );
+            })}
+          </DropdownMenu.Content>
+        </DropdownMenu>
+        <IconButton
+          size="md"
+          variant={previewOpen ? "secondary" : "ghost"}
+          icon={<Icon name="devices" size={22} weight={previewOpen ? "fill" : "regular"} />}
+          aria-label="미리보기 (localhost 웹뷰)"
+          onClick={() => (previewOpen ? closePreview() : openPreview())}
+        />
         <IconButton
           size="md"
           variant={aiOpen ? "secondary" : "ghost"}
@@ -343,7 +375,7 @@ function ShellTopbar() {
 /* ── Shell ─────────────────────────────────────── */
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
-  const { aiOpen } = usePreview();
+  const { aiOpen, previewOpen } = usePreview();
 
   if (pathname.startsWith("/ctds")) return <>{children}</>;
 
@@ -358,6 +390,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       <AppFrame.Content>
         <div className={styles.body}>
           <main className={styles.main}>{children}</main>
+          {previewOpen && (
+            <aside className={styles.preview} aria-label="미리보기">
+              <PreviewPane />
+            </aside>
+          )}
           {aiOpen && (
             <aside className={styles.ai} aria-label="AI 패널">
               <AiPanel key={pathname} />

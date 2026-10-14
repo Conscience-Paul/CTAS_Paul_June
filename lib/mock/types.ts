@@ -211,6 +211,10 @@ export interface Task {
   createdAt: string;
   due?: string;
   blockedReason?: string;
+  /** orbit: 같은 증상이 다시 접수된 횟수 */
+  reopenCount?: number;
+  /** orbit: 접수 주체 — 고객 포털(external) / 내부(internal) */
+  reporter?: "internal" | "external";
   dedupKey: string;
   clusterId?: string;
   description: string;

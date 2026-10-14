@@ -15,7 +15,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { ApprovalState, ContextVersion, Role } from "@/lib/mock";
+import type { ApprovalState, ContextVersion, Role, Task } from "@/lib/mock";
+import { notifications, tasks } from "@/lib/mock";
 
 export interface TaskGroup {
   id: string;
@@ -40,6 +41,10 @@ interface PreviewState {
   resolvedConflicts: Record<string, boolean>;
   resolveConflict: (id: string) => void;
 
+  /** 접수 폼으로 만든 개발 항목 — 목 배열에 밀어 넣는다(세션 동안만) */
+  addTask: (t: Task) => void;
+  taskVersion: number;
+
   /** 업무 통합 그룹 — 그룹은 AI 스레드를 하나로 공유한다 */
   taskGroups: TaskGroup[];
   addTaskGroup: (taskIds: string[]) => TaskGroup;
@@ -51,6 +56,18 @@ interface PreviewState {
 
   aiOpen: boolean;
   setAiOpen: (open: boolean) => void;
+
+  /** 알림 읽음 (프리뷰 로컬) */
+  readNotifs: Record<string, boolean>;
+  markRead: (id: string) => void;
+  markAllRead: () => void;
+
+  /** 오른쪽 미리보기 웹뷰 (localhost 등) — Codex 식 프리뷰 패널 */
+  previewOpen: boolean;
+  previewUrl: string;
+  openPreview: (url?: string) => void;
+  closePreview: () => void;
+  setPreviewUrl: (url: string) => void;
   /** 화면에서 AI 패널로 프롬프트를 밀어 넣을 때. 패널이 닫혀 있으면 열리면서 전달된다. */
   askAi: (text: string) => void;
   /** AiPanel 이 마운트 시 등록. 반환값은 해제 함수. */
@@ -70,6 +87,9 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
   const [resolvedConflicts, setResolved] = useState<Record<string, boolean>>({});
   const [projectId, setProjectId] = useState("p-hanbit-ims");
   const [taskGroups, setTaskGroups] = useState<TaskGroup[]>([]);
+  // 목 배열(tasks)은 모듈 싱글턴이라 push 로 전 화면에 즉시 보인다. 리렌더 신호만 상태로.
+  const [taskVersion, setTaskVersion] = useState(0);
+  const addTask = useCallback((t: Task) => { tasks.unshift(t); setTaskVersion((v) => v + 1); }, []);
   const addTaskGroup = useCallback((taskIds: string[]) => {
     const g: TaskGroup = { id: `grp-${Date.now().toString(36)}`, name: `통합 ${taskIds.length}건`, taskIds, createdAt: new Date().toISOString() };
     // 이미 다른 그룹에 있던 업무는 새 그룹으로 옮긴다
@@ -79,6 +99,13 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
   const removeTaskGroup = useCallback((groupId: string) => setTaskGroups((gs) => gs.filter((g) => g.id !== groupId)), []);
   // AI 는 지식 › AI 채팅 페이지가 주 진입점. 사이드 패널은 요청 시에만 연다.
   const [aiOpen, setAiOpen] = useState(false);
+  const [readNotifs, setReadNotifs] = useState<Record<string, boolean>>({});
+  const markRead = useCallback((id: string) => setReadNotifs((m) => ({ ...m, [id]: true })), []);
+  const markAllRead = useCallback(() => setReadNotifs((m) => { const n = { ...m }; notifications.forEach((x) => (n[x.id] = true)); return n; }), []);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState("http://localhost:3000");
+  const openPreview = useCallback((url?: string) => { if (url) setPreviewUrl(url); setPreviewOpen(true); }, []);
+  const closePreview = useCallback(() => setPreviewOpen(false), []);
   // 패널이 아직 안 떠 있을 때 들어온 프롬프트는 보관했다가 등록 시점에 흘려보낸다
   const askHandler = useRef<((text: string) => void) | null>(null);
   const pendingPrompt = useRef<string | null>(null);
@@ -150,6 +177,8 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
       setRiskStatus,
       resolvedConflicts,
       resolveConflict,
+      addTask,
+      taskVersion,
       taskGroups,
       addTaskGroup,
       removeTaskGroup,
@@ -157,12 +186,20 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
       setProjectId,
       aiOpen,
       setAiOpen,
+      readNotifs,
+      markRead,
+      markAllRead,
+      previewOpen,
+      previewUrl,
+      openPreview,
+      closePreview,
+      setPreviewUrl,
       askAi,
       registerAskHandler,
       mentionDoc,
       registerMentionHandler,
     }),
-    [role, approvalDecisions, decideApproval, extraVersions, addVersion, riskStatus, setRiskStatus, resolvedConflicts, resolveConflict, taskGroups, addTaskGroup, removeTaskGroup, projectId, aiOpen, askAi, registerAskHandler, mentionDoc, registerMentionHandler],
+    [role, approvalDecisions, decideApproval, extraVersions, addVersion, riskStatus, setRiskStatus, resolvedConflicts, resolveConflict, addTask, taskVersion, taskGroups, addTaskGroup, removeTaskGroup, projectId, aiOpen, readNotifs, markRead, markAllRead, previewOpen, previewUrl, openPreview, closePreview, askAi, registerAskHandler, mentionDoc, registerMentionHandler],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
