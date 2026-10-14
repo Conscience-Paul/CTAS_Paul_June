@@ -5,7 +5,7 @@
  * ✓ 전체 · ◐ 소속 프로젝트 한정/읽기 · – 불가
  */
 
-import { Badge, Callout, Icon } from "@/components/ctas/ctds";
+import { Badge, Callout, Icon, Select } from "@/components/ctas/ctds";
 import { Page, PageHeader, Panel, Row, Subtle } from "@/components/ctas/ui";
 import { LABEL, type Role } from "@/lib/mock";
 import { usePreview } from "@/lib/preview-state";
@@ -38,7 +38,7 @@ function PermCell({ p }: { p: Perm }) {
 }
 
 export default function RolesPage() {
-  const { role } = usePreview();
+  const { role, setRole } = usePreview();
   return (
     <Page wide>
       <PageHeader
@@ -79,6 +79,19 @@ export default function RolesPage() {
         <Subtle><Icon name="check" size={12} /> 소속 프로젝트 한정</Subtle>
         <Subtle><Icon name="eye" size={12} /> 읽기</Subtle>
         <Subtle><Icon name="minus" size={12} /> 불가</Subtle>
+      </Row>
+      <Row>
+        <Subtle>프리뷰 역할 전환 —</Subtle>
+        <Select size="sm" width={160} value={role} onValueChange={(v) => setRole(v as Role)}>
+          <Select.Trigger aria-label="프리뷰 역할" />
+          <Select.Content>
+            <Select.Item value="admin">관리자로 보기</Select.Item>
+            <Select.Item value="pm">PM으로 보기</Select.Item>
+            <Select.Item value="engineer">엔지니어로 보기</Select.Item>
+            <Select.Item value="viewer">뷰어로 보기</Select.Item>
+          </Select.Content>
+        </Select>
+        <Subtle>계약·문서 열람, 패턴 원본 추적 등 권한 가드를 시연합니다.</Subtle>
       </Row>
       <Callout tone="neutral" variant="outline" icon="info" title={`${LABEL.role[role]} — ${NOTE[role]}`}>
         고객 포털(추후)은 자기 고객사의 상태·공개 코멘트만 봅니다. diff·반려 사유·내부 코멘트는 노출되지 않습니다.

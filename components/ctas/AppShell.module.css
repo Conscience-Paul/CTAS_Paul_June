@@ -22,6 +22,17 @@
   flex-direction: column;
 }
 
+/* 미리보기 웹뷰 — AI 패널보다 넓게. 둘 다 열리면 나란히 */
+.preview {
+  width: calc(var(--sidebar-w) * 2.6);
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  background: var(--bg);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 /* ── 2단 사이드바: Rail(영역 전환) + Sidebar(영역 메뉴) ──
    CTDS 규칙: 앱 셸은 SidebarSplit 대신 바깥 flex 로 Rail + Sidebar 를 직접 조립. */
 .split {
@@ -110,6 +121,14 @@
   width: 100%;
 }
 
+/* Topbar — AppFrame 의 topbarSlot(flex) 안에서 가로를 꽉 채워야 우측 묶음이 끝으로 간다.
+   CTDS Topbar 루트는 폭 지정이 없어 내용 폭만큼만 차지한다. */
+.topbar {
+  flex: 1;
+  min-width: 0;
+  justify-content: space-between;
+}
+
 /* Topbar 내부 */
 .crumbs {
   min-width: 0;
@@ -121,13 +140,49 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  margin-left: auto;
 }
 
-.roleSwitch {
+
+/* 알림 */
+.bellWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.bellBadge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: var(--space-4);
+  height: var(--space-4);
+  padding-inline: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--destructive);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  line-height: var(--space-4);
+  text-align: center;
+  pointer-events: none;
+}
+
+.notifMenu {
+  width: calc(var(--sidebar-w) * 1.7);
+  max-height: 70dvh;
+  overflow-y: auto;
+}
+
+.notifHead {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  padding-inline: var(--space-2);
+  justify-content: space-between;
+  padding: var(--space-1) var(--space-2) var(--space-2);
   font-size: var(--text-xs);
-  color: var(--fg-subtle);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-strong);
+}
+
+.notifItem[data-unread] {
+  background: var(--primary-subtle);
 }

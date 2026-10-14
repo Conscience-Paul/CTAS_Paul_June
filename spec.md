@@ -259,8 +259,8 @@ Rail            Panel (검색 + 메뉴)
                 [현재 프로젝트 ▾] 추적 그래프
                 AI 는 탑바 패널 — 문서 행을 끌어다 놓으면 멘션
 
-</> 개발        유지보수·개발 /dev  (orbit Operate 허브: 유지보수·에이전트·배포·종결·리포트)
-                [현재 프로젝트 ▾] 업무 /projects/[id]/tasks · 충돌
+</> 개발        개발 목록 /dev (버그·신규 기능·변경 요청만, 문서·운영 업무 제외) · 에이전트 /dev/agents · 배포 /dev/deploy · 종결 /dev/closed
+                (orbit Operate 4단계. 충돌은 Nora 에이전트가 처리 — 메뉴 없음. 프로젝트 선택은 각 페이지 필터)
 
 ⚙ 설정          개요 · 조직 · 역할·권한 · 고객사·격리 · 컴플라이언스 · 연동
 
@@ -269,7 +269,7 @@ Rail 하단: AI 사이드 패널 토글 · 프로필
 
 영역 경계: **운영**은 매니저 공간(단계·마일스톤·리스크·계약처럼 높은 권한이 필요한 것), **지식**은 모든 문서의 집합소(컨텍스트·산출물·패턴·템플릿, 버전 관리)이며 AI 채팅의 주 진입점, **개발**은 업무 실행축(orbit 과 같은 구조).
 
-Topbar: 현재 경로 `Breadcrumb`, 역할 전환 스위치(프리뷰 전용), AI 패널 토글. 검색은 패널 상단.
+Topbar: 현재 경로 `Breadcrumb` 왼쪽, 오른쪽 끝에 알림(안 읽음 배지 · 드롭다운 리스트 · 항목 클릭 시 관련 화면으로 이동 · 모두 읽음) · 미리보기 토글(오른쪽 localhost 웹뷰) · AI 패널 토글. 역할 전환은 설정 › 역할·권한에.
 
 **AI**: 주 화면은 지식 › AI 채팅(전체 폭, 범위 = 현재 프로젝트). 우측 사이드 패널은 "AI로 수정" 같은 화면 내 버튼이 열 때만 등장(기본 닫힘).
 
@@ -285,7 +285,10 @@ Topbar: 현재 경로 `Breadcrumb`, 역할 전환 스위치(프리뷰 전용), A
 | (문서함 우상단 💬) | 우측 AI 사이드 패널. 문서 행을 **드래그앤드롭**하면 패널에 멘션(첨부 칩)되고 AI 가 그 문서를 보고 답한다. Drawer 의 "AI 로 보완"도 같은 멘션. 제안 적용 시 해당 문서에 v+1 | AiPanel, ChatInput attachments |
 | `/ops/contracts/schedule` | 계약·문서 › **일정** — 발송 예정·검토 기한·만료·갱신 협의(만료 45일 전 자동). 기간·종류 필터, 항목 클릭 → Drawer | Badge, FilterButton |
 | `/knowledge` | 지식 문서함 — Finder 식 폴더 + 리스트(이름·종류·상태·출처·최근 작성·수정·원본 아이콘). 처음엔 현재 프로젝트 폴더에서 시작. 행 클릭 → Drawer(내용 보기/편집 → v+1 · 버전 · 연결: 추적 링크·연결 업무). 드래그 → AI 패널 멘션 | TableRow, Drawer, VersionRail |
-| `/dev` | orbit Operate 허브: 미해결/치명·차단/검토 대기/고객 접수 지표, 탭 유지보수·에이전트·배포·종결·리포트 | Tabs, TableRow, MetricCard |
+| `/dev` | 개발 › 개발 목록 — 개발 항목(버그·신규 기능·변경 요청)만. 지표 카드 없이 프로젝트·담당·상태·종류 건수 필터. 재접수 칩, 접수(고객/내부), 에이전트 진행 상태(수정 중/승인 요청/반려) 컬럼. 「접수」→ 접수 Drawer(orbit intake: 제목·프로젝트·종류·환경·심각도·우선순위·접수 경로 + 종류별 시나리오(어디서/재현/결과/단서 · 어디에/필요/이유/참고) + 첨부 + 관련 컨텍스트 + Nora 위임) → state=new 로 목록에 추가, Nora 군집 판정(목), 체크 → AI 분석 · 통합(그룹 = AI 스레드 하나), 행 클릭 → 업무 Drawer | TableRow(selectable), Drawer |
+| `/dev/agents` | 개발 › 에이전트 — AgentRun 목록(실행 중·승인 대기·반려·승인됨 지표), 행 클릭 → 실행 결과 문서 Drawer | TableRow, KnowledgeDrawer |
+| `/dev/deploy` | 개발 › 배포 — 배포된 변경(change 컨텍스트) + 승인 대기 결과, 행 클릭 → Drawer | TableRow |
+| `/dev/closed` | 개발 › 종결 — 검증됨·완료·하지 않음 업무, 행 클릭 → 업무 Drawer | TableRow |
 | `/projects` | 프로젝트 목록(고객사별 그룹, 단계·리스크 수·담당 PM) | TableRow, Chip, Avatar |
 | `/projects/[id]` | 운영 개요: 단계 Stepper, 마일스톤, 담당자, 진행 지표, 리스크 요약 | Stepper, MetricCard, EventChip |
 | `/projects/[id]/context` | 소스·인박스·항목 리스트 | Tabs, ListItem, FileIcon |
@@ -298,7 +301,7 @@ Topbar: 현재 경로 `Breadcrumb`, 역할 전환 스위치(프리뷰 전용), A
 | `/projects/[id]/deliverables` | 산출물 목록 + 생성 위저드 | Stepper, SelectableCard |
 | `/projects/[id]/deliverables/[docId]` | 산출물 상세(버전 레일 동일) | SidebarSplit |
 | `/projects/[id]/settings` | 멤버·역할, 소스 바인딩, 컴플라이언스 프로필 적용 | Select, Switch |
-| `/approvals` | 전 프로젝트 승인 큐(종류 필터) | Tabs, ListItem |
+| `/approvals` | 전 프로젝트 승인 큐 — 얇은 리스트(상태·종류 건수 필터), 행 클릭 → Drawer(메시지 + 근거: 실행 결과 diff / 업무 Pre-flight / 리스크 제안·초안 / 산출물 본문). Drawer 안에서 승인·반려(사유) 후 다음 항목으로, **⌘← / ⌘→** 로 이전·다음 이동, 위치 n/total | TableRow, Drawer |
 | `/knowledge/patterns` `/[id]` `/promote` | 패턴 라이브러리·상세·승격 위저드 | GalleryItem, Stepper |
 | `/knowledge/templates` | 산출물 템플릿 | GalleryItem |
 | `/ops/insights` | 인사이트(계획 인텔리전스) — 단계별 계획 vs 실제, 지연 원인, 공수 추정 편차, 유사 프로젝트. 운영(리스크 옆)으로 이동 | MetricCard + 차트 |

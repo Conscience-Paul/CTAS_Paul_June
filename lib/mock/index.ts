@@ -11,6 +11,7 @@ export * from "./knowledge";
 export * from "./ai";
 export * from "./contracts";
 export * from "./knowledge-fs";
+export * from "./notifications";
 
 import { aiScenarios } from "./ai";
 import { contracts } from "./contracts";

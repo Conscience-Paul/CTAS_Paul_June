@@ -1,244 +1,138 @@
 "use client";
 
 /**
- * 개발 — orbit 의 Operate 화면을 본뜬 허브. 전 프로젝트 업무를 한 표에서 보고,
- * 탭으로 유지보수 · 에이전트 · 배포 · 종결 · 리포트를 오간다.
+ * 개발 › 개발 목록 — 버그 리포트·신규 기능·변경 요청. 전부 Nora 에이전트가 처리.
+ * 체크 → AI 분석 · 통합(그룹 = AI 스레드 하나). 행 클릭 → Drawer.
  */
 
 import Link from "next/link";
 import { useState } from "react";
-import { Avatar, Badge, Button, Callout, FilterButton, Icon, Input, MetricCard, TableHeader, TableRow, Tabs } from "@/components/ctas/ctds";
-import { Grid, List, Page, PageHeader, Row, SeverityBadge, Stack, Strong, Subtle, TaskStateBadge, TableBox } from "@/components/ctas/ui";
-import { Prose } from "@/components/ctas/ui";
-import { ListItem } from "@/components/ctas/ctds";
-import {
-  LABEL,
-  TONE,
-  agentRuns,
-  approvals,
-  contextItems,
-  daysUntil,
-  deliverables,
-  fmtDate,
-  fmtDateTime,
-  getMember,
-  getProject,
-  getTask,
-  projects,
-  requests,
-  tasks,
-  type Task,
-} from "@/lib/mock";
+import { Avatar, Badge, Button, Callout, Icon, Input, TableHeader, TableRow } from "@/components/ctas/ctds";
+import { Page, PageHeader, Row, SeverityBadge, Stack, Strong, Subtle, TableBox } from "@/components/ctas/ui";
+import { DevDrawer } from "./_drawer";
+import { IntakeDrawer } from "./_intake";
+import { approvals, getMember, type Task, type TaskKind } from "@/lib/mock";
 import { usePreview } from "@/lib/preview-state";
+import { CountFilter, OPEN, ProjectSelect, WhoSelect, devTasks, taskCell, taskColumns } from "./_shared";
 import styles from "./dev.module.css";
 
-const OPEN = (t: Task) => !["done", "verified", "wont_do"].includes(t.state);
+type Scope = "open" | "review" | "blocked" | "done";
 
-const columns = [
-  { key: "num", label: "#", width: 56 },
-  { key: "state", label: "상태", width: 100 },
-  { key: "kind", label: "종류", width: 96 },
-  { key: "title", label: "제목", flex: true, minWidth: 320 },
-  { key: "project", label: "프로젝트", width: 200 },
-  { key: "owner", label: "담당", width: 110 },
-  { key: "severity", label: "심각도", width: 90 },
-  { key: "due", label: "기한", width: 90, align: "end" as const },
-];
-
-export default function DevPage() {
-  const { approvalDecisions } = usePreview();
+export default function DevListPage() {
+  const { approvalDecisions, taskGroups, addTaskGroup, mentionDoc } = usePreview();
   const [projectFilter, setProjectFilter] = useState<string | null>(null);
   const [who, setWho] = useState<"all" | "mine">("all");
-  const [scope, setScope] = useState<"open" | "review" | "done" | "all">("open");
+  const [scope, setScope] = useState<Scope[]>(["open"]);
+  const [kind, setKind] = useState<TaskKind[]>([]);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [intake, setIntake] = useState(false);
 
-  const inProject = (pid: string) => !projectFilter || pid === projectFilter;
-  const base = tasks.filter((t) => inProject(t.projectId) && (who === "all" || t.ownerId === "m-seoyeon"));
-  const open = base.filter(OPEN);
-  const critical = base.filter((t) => t.severity === "critical" || t.state === "blocked").filter(OPEN);
-  const review = base.filter((t) => t.state === "pending_review");
-  const inbox = requests.filter((r) => inProject(r.projectId) && r.triage === "pending");
-  const myPending = approvals.filter((a) => inProject(a.projectId) && a.kind === "result" && (approvalDecisions[a.id] ?? a.state) === "pending");
+  const all = devTasks();
+  const base = all.filter((t) => (!projectFilter || t.projectId === projectFilter) && (who === "all" || t.ownerId === "m-seoyeon" || t.ownerId === "m-junho"));
+  const scopeOf = (t: Task): Scope => (!OPEN(t) ? "done" : t.state === "blocked" ? "blocked" : t.state === "pending_review" ? "review" : "open");
+  const listed = base.filter((t) => (scope.length === 0 || scope.includes(scopeOf(t))) && (kind.length === 0 || kind.includes(t.kind)));
+  const myPending = approvals.filter((a) => (!projectFilter || a.projectId === projectFilter) && a.kind === "result" && (approvalDecisions[a.id] ?? a.state) === "pending");
 
-  const listed = base.filter((t) =>
-    scope === "all" ? true : scope === "open" ? OPEN(t) : scope === "review" ? t.state === "pending_review" : !OPEN(t),
-  );
-  const num = (t: Task) => tasks.indexOf(t) + 101;
+  const groups = taskGroups.map((g) => ({ ...g, taskIds: g.taskIds.filter((id) => listed.some((t) => t.id === id)) })).filter((g) => g.taskIds.length > 0);
+  const grouped = new Set(groups.flatMap((g) => g.taskIds));
+  const groupOf = (id: string) => groups.find((g) => g.taskIds.includes(id));
+  const selectedIds = listed.filter((t) => selected[t.id]).map((t) => t.id);
+  const toggle = (id: string, next: boolean) => setSelected((m) => ({ ...m, [id]: next }));
+  const toggleMany = (ids: string[], next: boolean) => setSelected((m) => { const n = { ...m }; ids.forEach((id) => (n[id] = next)); return n; });
+  const openTask = openId ? all.find((t) => t.id === openId) : undefined;
+
+  const groupCell = (key: string, name: string, members: Task[], isCollapsed: boolean) => {
+    switch (key) {
+      case "num": return <Icon name={isCollapsed ? "caret-right" : "caret-down"} size={14} />;
+      case "title": return <span className={styles.groupTitle}><Icon name="stack" size={14} /><span className={styles.groupName}>{name}</span><Subtle>· 하나의 AI 스레드</Subtle></span>;
+      case "state": { const b = members.filter((t) => t.state === "blocked").length; return b > 0 ? <Badge size="sm" variant="soft" status="destructive">차단 {b}</Badge> : <Subtle>{members.length}건</Subtle>; }
+      case "kind": return <Subtle>그룹</Subtle>;
+      case "owner": return <Row tight>{[...new Set(members.map((t) => t.ownerId))].map((o) => <Avatar key={o} size="xs" name={getMember(o)?.name} />)}</Row>;
+      case "severity": { const top = ["critical", "high", "medium", "low"].find((sv) => members.some((t) => t.severity === sv)) as Task["severity"] | undefined; return top ? <SeverityBadge severity={top} /> : null; }
+      default: return <Subtle>—</Subtle>;
+    }
+  };
 
   return (
     <Page wide>
       <PageHeader
-        eyebrow="orbit Operate 흐름 — 접수 → 분류 → 실행 → 검증 → 종결"
-        title="유지보수·개발"
-        lead="전 프로젝트의 업무를 한 곳에서. 에이전트가 고치고, 승인은 사람이, 상태 전이는 러너가."
-        actions={<Button size="sm" variant="primary" leftIcon={<Icon name="plus" />}>장애 기록</Button>}
+        title="개발 목록"
+        lead="버그 리포트 · 신규 기능 · 변경 요청. 접수 → 분류 → 에이전트 수정 → 결과 승인 → 배포."
+        actions={<Button size="sm" variant="primary" leftIcon={<Icon name="plus" />} onClick={() => setIntake(true)}>접수</Button>}
       />
 
-      <Row>
-        <FilterButton size="sm" selected={projectFilter === null} onClick={() => setProjectFilter(null)}>전체</FilterButton>
-        {projects.map((p) => (
-          <FilterButton key={p.id} size="sm" selected={projectFilter === p.id} onClick={() => setProjectFilter(p.id)}>{p.name}</FilterButton>
-        ))}
-      </Row>
+      <div className={styles.filters}>
+        <ProjectSelect value={projectFilter} onChange={setProjectFilter} />
+        <WhoSelect value={who} onChange={setWho} />
+        <span className={styles.vsep} />
+        <CountFilter<Scope>
+          value={scope}
+          onChange={setScope}
+          options={[
+            { id: "open", label: "미해결", count: base.filter((t) => scopeOf(t) === "open").length },
+            { id: "review", label: "승인 대기", count: base.filter((t) => scopeOf(t) === "review").length },
+            { id: "blocked", label: "차단", count: base.filter((t) => scopeOf(t) === "blocked").length },
+            { id: "done", label: "완료", count: base.filter((t) => scopeOf(t) === "done").length },
+          ]}
+        />
+        <span className={styles.vsep} />
+        <CountFilter<TaskKind>
+          value={kind}
+          onChange={setKind}
+          options={[
+            { id: "bug", label: "버그", count: base.filter((t) => t.kind === "bug").length },
+            { id: "feature", label: "신규 기능", count: base.filter((t) => t.kind === "feature").length },
+            { id: "change_request", label: "변경 요청", count: base.filter((t) => t.kind === "change_request").length },
+          ]}
+        />
+        <span style={{ flex: 1 }} />
+        <Input size="sm" width="md" leftIcon={<Icon name="search" />} placeholder="제목 · 증상 · 리포터 검색" aria-label="검색" />
+      </div>
 
-      <Tabs defaultValue="maint" variant="underline" size="md">
-        <Tabs.List aria-label="개발 영역">
-          <Tabs.Trigger value="maint">유지보수</Tabs.Trigger>
-          <Tabs.Trigger value="agents">에이전트</Tabs.Trigger>
-          <Tabs.Trigger value="deploy">배포</Tabs.Trigger>
-          <Tabs.Trigger value="closed">종결</Tabs.Trigger>
-          <Tabs.Trigger value="reports">리포트</Tabs.Trigger>
-        </Tabs.List>
+      {myPending.length > 0 && (
+        <Callout tone="brand" variant="outline" icon="seal-check" title={`에이전트가 올린 ${myPending.length}건이 결과 승인을 기다리고 있어요`} actions={<Button size="xs" variant="ghost" asChild><Link href="/approvals">보기 →</Link></Button>} actionsPlacement="right">
+          확인하고 승인하면 배포 단계로 넘어갑니다.
+        </Callout>
+      )}
 
-        <Tabs.Panel value="maint">
-          <Stack className={styles.tab}>
-            <Grid cols={4}>
-              <MetricCard label="미해결" value={open.length} icon="list" />
-              <MetricCard label="치명·차단" value={critical.length} icon="warning" description={critical.length > 0 ? "즉시 확인" : undefined} />
-              <MetricCard label="검토 대기" value={review.length} icon="seal-check" />
-              <MetricCard label="고객 접수 (분류 전)" value={inbox.length} icon="envelope" />
-            </Grid>
+      <Stack>
+        <div className={styles.selectBar}>
+          {selectedIds.length > 0 ? (
+            <>
+              <Strong>{selectedIds.length}건 선택</Strong>
+              <Button size="sm" variant="primary" leftIcon={<Icon name="chat-circle" />} onClick={() => { selectedIds.forEach((id) => mentionDoc(id)); setSelected({}); }}>AI 분석</Button>
+              <Button size="sm" variant="outline" leftIcon={<Icon name="stack" />} disabled={selectedIds.length < 2} onClick={() => { addTaskGroup(selectedIds); setSelected({}); }}>통합</Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelected({})}>선택 해제</Button>
+              <Subtle>통합하면 하나의 AI 스레드를 공유합니다.</Subtle>
+            </>
+          ) : (
+            <Subtle>{listed.length}건 · 체크하면 AI 분석 · 통합. 행을 누르면 상세.</Subtle>
+          )}
+        </div>
+        <TableBox>
+          <TableHeader columns={taskColumns} variant="line" selectable selectAllChecked={listed.length > 0 && selectedIds.length === listed.length} onSelectAllChange={(next) => toggleMany(listed.map((t) => t.id), next)} />
+          {groups.map((g) => {
+            const members = g.taskIds.map((id) => all.find((t) => t.id === id)!);
+            const isCollapsed = !!collapsed[g.id];
+            return (
+              <div key={g.id} style={{ display: "contents" }}>
+                <TableRow<Task> variant="line" data={members[0]} selectable selected={members.every((t) => selected[t.id])} onSelectedChange={(next) => toggleMany(g.taskIds, next)} onClick={() => setCollapsed((m) => ({ ...m, [g.id]: !isCollapsed }))} columns={taskColumns.map((c) => ({ ...c, render: () => groupCell(c.key, g.name, members, isCollapsed) }))} />
+                {!isCollapsed && members.map((t) => (
+                  <TableRow<Task> key={t.id} variant="line" data={t} selectable selected={!!selected[t.id]} onSelectedChange={(next) => toggle(t.id, next)} onClick={() => setOpenId(t.id)} columns={taskColumns.map((c) => ({ ...c, render: (d: Task) => (c.key === "title" ? <span className={styles.member}><span className={styles.ellipsis}>{d.title}</span></span> : taskCell(c.key, d)) }))} />
+                ))}
+              </div>
+            );
+          })}
+          {listed.filter((t) => !grouped.has(t.id)).map((t) => (
+            <TableRow<Task> key={t.id} variant="line" data={t} selectable selected={!!selected[t.id]} onSelectedChange={(next) => toggle(t.id, next)} onClick={() => setOpenId(t.id)} columns={taskColumns.map((c) => ({ ...c, render: (d: Task) => taskCell(c.key, d) }))} />
+          ))}
+        </TableBox>
+      </Stack>
 
-            <Row style={{ justifyContent: "space-between" }}>
-              <Row tight>
-                <Subtle>누구의</Subtle>
-                <FilterButton size="sm" selected={who === "all"} onClick={() => setWho("all")}>전체</FilterButton>
-                <FilterButton size="sm" selected={who === "mine"} onClick={() => setWho("mine")}>내 담당</FilterButton>
-                <span className={styles.vsep} />
-                <FilterButton size="sm" selected={scope === "all"} onClick={() => setScope("all")}>전체</FilterButton>
-                <FilterButton size="sm" selected={scope === "open"} onClick={() => setScope("open")}>미해결</FilterButton>
-                <FilterButton size="sm" selected={scope === "review"} onClick={() => setScope("review")}>리뷰</FilterButton>
-                <FilterButton size="sm" selected={scope === "done"} onClick={() => setScope("done")}>완료</FilterButton>
-              </Row>
-              <Input size="sm" width="md" leftIcon={<Icon name="search" />} placeholder="제목 · 증상 · 리포터 · 태그 검색" aria-label="업무 검색" />
-            </Row>
-
-            {myPending.length > 0 && (
-              <Callout tone="brand" variant="outline" icon="seal-check" title={`에이전트가 올린 ${myPending.length}건이 결과 승인을 기다리고 있어요`} actions={<Button size="xs" variant="ghost" asChild><Link href="/approvals">보기 →</Link></Button>} actionsPlacement="right">
-                확인하고 승인하면 다음 단계(배포·고객 보고)로 넘어갑니다.
-              </Callout>
-            )}
-
-            <TableBox>
-              <TableHeader columns={columns} variant="line" />
-              {listed.map((t) => (
-                <TableRow<Task>
-                  key={t.id}
-                  href={`/projects/${t.projectId}/tasks/${t.id}`}
-                  variant="line"
-                  data={t}
-                  columns={columns.map((c) => ({ ...c, render: (d: Task) => cell(c.key, d, num(d)) }))}
-                />
-              ))}
-            </TableBox>
-          </Stack>
-        </Tabs.Panel>
-
-        <Tabs.Panel value="agents">
-          <Stack className={styles.tab}>
-            <Subtle>에이전트는 &ldquo;고쳤다&rdquo;까지. 반려 사유는 다음 시도 프롬프트에 들어갑니다.</Subtle>
-            <List>
-              {agentRuns.filter((r) => inProject(getTask(r.taskId)?.projectId ?? "")).map((r) => {
-                const t = getTask(r.taskId)!;
-                return (
-                  <ListItem
-                    key={r.id}
-                    href={`/projects/${t.projectId}/tasks/${t.id}`}
-                    variant="activity"
-                    layout="stacked"
-                    leading={<Badge size="sm" variant="soft" status={TONE.runState[r.state]}>{LABEL.runState[r.state]}</Badge>}
-                    from={<Row tight><Strong>{t.title}</Strong><Subtle>#{r.attempt} · {r.agent}</Subtle></Row>}
-                    body={<Stack tight><span>{r.summary}</span>{r.rejectReason && <Subtle>반려: {r.rejectReason}</Subtle>}</Stack>}
-                    meta={fmtDateTime(r.startedAt)}
-                  />
-                );
-              })}
-            </List>
-          </Stack>
-        </Tabs.Panel>
-
-        <Tabs.Panel value="deploy">
-          <Stack className={styles.tab}>
-            <Subtle>승인된 결과만 배포됩니다. 변경은 컨텍스트(`change`)로 기록돼 요구사항과 연결됩니다.</Subtle>
-            <List>
-              {contextItems.filter((c) => c.kind === "change" && inProject(c.projectId)).map((c) => (
-                <ListItem
-                  key={c.id}
-                  href={`/projects/${c.projectId}/context/${c.id}`}
-                  variant="activity"
-                  layout="stacked"
-                  leading={<Badge size="sm" variant="soft" status="success">배포됨</Badge>}
-                  from={<Strong>{c.title}</Strong>}
-                  body={<Prose text={c.versions[c.versions.length - 1].body} />}
-                  meta={fmtDate(c.origin.at)}
-                />
-              ))}
-              {agentRuns.filter((r) => r.state === "submitted").map((r) => {
-                const t = getTask(r.taskId)!;
-                return (
-                  <ListItem
-                    key={r.id}
-                    href={`/projects/${t.projectId}/tasks/${t.id}`}
-                    variant="activity"
-                    layout="stacked"
-                    leading={<Badge size="sm" variant="soft" status="warning">승인 대기</Badge>}
-                    from={<Strong>{t.title}</Strong>}
-                    body={<Subtle>결과 승인 후 배포 큐로 이동 · {r.diff?.split("\n").length ?? 0}개 파일</Subtle>}
-                    meta={fmtDate(r.startedAt)}
-                  />
-                );
-              })}
-            </List>
-          </Stack>
-        </Tabs.Panel>
-
-        <Tabs.Panel value="closed">
-          <Stack className={styles.tab}>
-            <List>
-              {tasks.filter((t) => !OPEN(t) && inProject(t.projectId)).map((t) => (
-                <ListItem
-                  key={t.id}
-                  href={`/projects/${t.projectId}/tasks/${t.id}`}
-                  variant="activity"
-                  leading={<TaskStateBadge state={t.state} />}
-                  body={<Row tight><Strong>{t.title}</Strong><Subtle>{getProject(t.projectId)?.name}</Subtle></Row>}
-                  meta={t.timeline[t.timeline.length - 1]?.at}
-                />
-              ))}
-            </List>
-          </Stack>
-        </Tabs.Panel>
-
-        <Tabs.Panel value="reports">
-          <Stack className={styles.tab}>
-            <Subtle>고객 발송 리포트는 승인(customer_send)을 거칩니다.</Subtle>
-            <List>
-              {deliverables.filter((d) => d.kind === "report" && inProject(d.projectId)).map((d) => (
-                <ListItem
-                  key={d.id}
-                  href={`/projects/${d.projectId}/deliverables/${d.id}`}
-                  variant="activity"
-                  leading={<Badge size="sm" variant="soft">v{d.versions.length}</Badge>}
-                  body={<Row tight><Strong>{d.title}</Strong><Subtle>{getProject(d.projectId)?.name}</Subtle></Row>}
-                  meta={fmtDate(d.versions[d.versions.length - 1].at)}
-                />
-              ))}
-            </List>
-          </Stack>
-        </Tabs.Panel>
-      </Tabs>
+      {openTask && <DevDrawer task={openTask} group={groupOf(openTask.id)} onClose={() => setOpenId(null)} />}
+      {intake && <IntakeDrawer onClose={() => setIntake(false)} defaultProjectId={projectFilter ?? undefined} />}
     </Page>
   );
-}
-
-function cell(key: string, t: Task, n: number) {
-  switch (key) {
-    case "num": return <Subtle>{n}</Subtle>;
-    case "state": return <TaskStateBadge state={t.state} />;
-    case "kind": return <Badge size="sm" variant="soft" status={t.kind === "bug" ? "destructive" : undefined}>{LABEL.taskKind[t.kind]}</Badge>;
-    case "title": return t.title;
-    case "project": return <Subtle>{getProject(t.projectId)?.name}</Subtle>;
-    case "owner": { const o = getMember(t.ownerId); return <Row tight><Avatar size="xs" name={o?.name} />{o?.name}</Row>; }
-    case "severity": return <SeverityBadge severity={t.severity} />;
-    case "due": return t.due ? <span>{daysUntil(t.due) < 0 ? <Badge size="sm" variant="soft" status="destructive">+{-daysUntil(t.due)}</Badge> : `D-${daysUntil(t.due)}`}</span> : <Subtle>—</Subtle>;
-  }
 }
