@@ -23,10 +23,8 @@ import {
   contracts,
   findDocLike,
   lineageOf,
-  getContext,
   getMember,
   type DocLike,
-  getProject,
   getTask,
   hrefFor,
   scenarioFor,
@@ -35,19 +33,6 @@ import {
 import { DOC_MIME, draggedDoc, endDocDrag } from "@/lib/drag";
 import { usePreview } from "@/lib/preview-state";
 import styles from "./AiPanel.module.css";
-
-function scopeLabel(pathname: string) {
-  const seg = pathname.split("/").filter(Boolean);
-  if (seg[0] === "projects" && seg[1]) {
-    const p = getProject(seg[1]);
-    if (seg[2] === "context" && seg[3]) return getContext(seg[3])?.title ?? p?.name;
-    if (seg[2] === "tasks" && seg[3]) return getTask(seg[3])?.title ?? p?.name;
-    return p?.name ?? "프로젝트";
-  }
-  if (seg[0] === "knowledge") return "지식 문서함 (현재 프로젝트 + 교차 패턴)";
-  if (seg[0] === "approvals") return "승인 대기 전체";
-  return "전체 (내 프로젝트)";
-}
 
 function renderBody(text: string) {
   // **굵게** 와 > 인용만 처리 — 프리뷰용 최소 렌더
@@ -153,7 +138,8 @@ export function AiPanel({ embedded = false }: { embedded?: boolean }) {
   const scenario = scenarioFor(pathname);
 
   // 스레드는 라우트(=컨텍스트 범위)마다 새로 시작 — AppShell 이 key={pathname} 으로 리마운트한다
-  const [turns, setTurns] = useState<AiTurn[]>([]);
+  // 범위 표시·예시 질문 대신, 화면별 시나리오의 첫 대화 한 쌍을 예시로 깔아 둔다
+  const [turns, setTurns] = useState<AiTurn[]>(() => (scenario ? scenario.turns.slice(0, 2) : []));
   const [draft, setDraft] = useState("");
   const [thinking, setThinking] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
@@ -251,25 +237,8 @@ export function AiPanel({ embedded = false }: { embedded?: boolean }) {
           <IconButton size="sm" variant="ghost" icon={<Icon name="x" />} aria-label="패널 닫기" onClick={() => setAiOpen(false)} />
         </div>
       )}
-      <div className={styles.scope}>
-        <Icon name="selection" size={12} />
-        범위
-        <span className={styles.scopeName}>{scopeLabel(pathname)}</span>
-        {mentions.length > 0 && <span className={styles.scopeDocs}>· 문서 {mentions.length}</span>}
-      </div>
 
       <div className={styles.thread} ref={threadRef}>
-        {turns.length === 0 && scenario && (
-          <div className={styles.suggestions}>
-            <div className={styles.suggestionsLabel}>이 화면에서 물어볼 수 있는 것</div>
-            {scenario.suggestions.map((s) => (
-              <Button key={s} size="sm" variant="ghost" className={styles.suggestion} onClick={() => ask(s)}>
-                {s}
-              </Button>
-            ))}
-          </div>
-        )}
-
         {turns.map((t, i) =>
           t.role === "user" ? (
             <UserMessage key={i} actions={[]}>
