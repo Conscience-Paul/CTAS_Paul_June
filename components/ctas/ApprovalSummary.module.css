@@ -1,0 +1,55 @@
+/* 총 건수 + 개발·문서·기타 분포 — 누르면 승인 목록 */
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: inherit;
+  text-decoration: none;
+  transition: var(--transition-colors);
+}
+
+.summary:hover {
+  background: var(--hover);
+}
+
+.total {
+  font-size: var(--text-2xl);
+  line-height: 1;
+  font-weight: var(--font-weight-semibold);
+  color: var(--fg-strong);
+}
+
+.unit {
+  margin-left: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-muted);
+}
+
+.split {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.bucket {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.bucketLabel {
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+}
+
+.bucketCount {
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--fg-strong);
+}

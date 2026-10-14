@@ -1,0 +1,337 @@
+/* 프로젝트 개요 — 상태 한 줄 · 지금 처리할 것 · 요약 · 접은 정보. 색·크기는 토큰. */
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--fg-strong);
+}
+
+.meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+}
+
+.headActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+/* ── 상태 한 줄 ── */
+.statusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.stages {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.stage {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-0);
+  padding: 0 var(--space-2);
+  height: var(--control-h-xs, 1.5rem);
+  font-size: var(--text-xs);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.stage[data-state="past"] {
+  color: var(--fg-subtle);
+}
+
+.stage[data-state="current"] {
+  color: var(--primary);
+  font-weight: var(--font-weight-semibold);
+  background: var(--primary-subtle);
+  border: 1px solid var(--primary-border-color);
+}
+
+.stage[data-state="future"] {
+  color: var(--fg-subtle);
+  opacity: 0.6;
+}
+
+.gateBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: var(--space-2);
+  padding: 0 var(--space-2);
+  height: var(--control-h-xs, 1.5rem);
+  font: inherit;
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.gateBtn:hover {
+  border-color: var(--border-strong);
+  color: var(--fg-strong);
+}
+
+.nextMs {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: inherit;
+  text-decoration: none;
+}
+
+.nextMs:hover strong {
+  color: var(--primary);
+}
+
+.gateList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) 0 0;
+  list-style: none;
+  border-top: 1px solid var(--border);
+}
+
+.gateList li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--fg-strong);
+}
+
+.gateList li[data-done] {
+  color: var(--fg-subtle);
+  text-decoration: line-through;
+}
+
+/* ── 지금 처리할 것 ── */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.h2 {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--fg-strong);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+}
+
+.acts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 한 줄 전체가 버튼 — 누르면 서랍 */
+.act {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font: inherit;
+  text-align: left;
+  color: var(--fg-subtle);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.act:hover {
+  background: var(--bg-subtle);
+}
+
+.acts > li + li {
+  border-top: 1px solid var(--border);
+}
+
+/* 종류(막힌 업무 · 승인 종류) — 폭을 맞춰 제목이 한 줄로 정렬 */
+.actKind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+  width: 7rem;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-muted);
+}
+
+.act[data-tone="danger"] .actKind {
+  color: var(--destructive);
+}
+
+.act[data-tone="primary"] .actKind {
+  color: var(--primary);
+}
+
+/* 승인 종류 서랍 */
+.kindList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-4) 0 0;
+  list-style: none;
+}
+
+.kindItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  color: inherit;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.kindItem:hover {
+  border-color: var(--primary);
+}
+
+.kindItemHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--fg-strong);
+}
+
+.kindItemMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+}
+
+.kindItemMeta > span {
+  color: var(--primary);
+}
+
+.actLead {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--fg-muted);
+}
+
+.actText {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.actTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actSub {
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actMeta {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+/* ── 요약 한 줄 ── */
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+}
+
+.summary strong {
+  color: var(--fg-strong);
+  font-weight: var(--font-weight-semibold);
+}
+
+.summary strong[data-warn] {
+  color: var(--destructive);
+}
+
+.links {
+  display: inline-flex;
+  gap: var(--space-4);
+}
+
+.links a {
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  text-decoration: none;
+}
+
+.links a:hover {
+  color: var(--primary);
+}
+
+/* ── 프로젝트 정보 (접어 둠) ── */
+.info {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  padding-top: var(--space-3);
+}
+
+@media (max-width: 960px) {
+  .info {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

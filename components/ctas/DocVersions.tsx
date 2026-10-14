@@ -35,6 +35,7 @@ export function useDocVersions(docId: string, base: ContextVersion[], target: De
   const { drafts, saveDraft, discardDraft, publishDraft } = usePreview();
   const versions = useVersions(docId, base);
   const draft = drafts[docId];
+  // draft 는 문서당 하나, 번호가 없다. draftV 는 선택용 키이자 "승인하면 확정될 번호"일 뿐 화면엔 draft 로만 표시
   const draftV = versions.length + 1;
   const topV = draft ? draftV : versions.length;
 
@@ -59,7 +60,7 @@ export function useDocVersions(docId: string, base: ContextVersion[], target: De
   /** 수정 저장 — 확정 버전이 아니라 draft 로 */
   const save = (d: Omit<ContextVersion, "v">) => {
     saveDraft(docId, d);
-    toast({ title: `v${draftV} draft 저장됨`, description: `승인하면 ${dest.service} 에 배포됩니다.`, tone: "neutral" });
+    toast({ title: draft ? "draft 덮어씀" : "draft 저장됨", description: `draft 는 문서당 하나 — 승인하면 v${draftV} 로 확정되어 ${dest.service} 에 배포됩니다.`, tone: "neutral" });
   };
   const approve = () => {
     publishDraft(docId, dest.where);
@@ -71,7 +72,7 @@ export function useDocVersions(docId: string, base: ContextVersion[], target: De
   };
   const discard = () => {
     discardDraft(docId);
-    toast({ title: `v${draftV} draft 폐기`, description: `확정 버전은 v${versions.length} 그대로입니다.`, tone: "neutral" });
+    toast({ title: "draft 폐기", description: `확정 버전은 v${versions.length} 그대로입니다.`, tone: "neutral" });
   };
 
   return { versions, draft, draftV, selected, setSelected, mode, setMode, ver, prev, latestPending, isLatest: selected === topV, editBase: draft?.body ?? versions[versions.length - 1]?.body ?? "", dest, isNew, save, approve, discard };
@@ -96,7 +97,7 @@ export function DraftBanner({ flow, onCompare }: { flow: Flow; onCompare: () => 
       tone="warning"
       variant="outline"
       icon="warning-circle"
-      title={`업데이트 있음 — v${flow.draftV} draft`}
+      title="업데이트 있음 — draft"
       actionsPlacement="right"
       actions={
         <>
@@ -108,7 +109,7 @@ export function DraftBanner({ flow, onCompare }: { flow: Flow; onCompare: () => 
     >
       {flow.isNew
         ? <>아직 배포된 적 없음 — 승인하면 {flow.dest.service} 에 새로 만듭니다: {flow.dest.where}</>
-        : <><DeployLink target={flow.dest} /> 에는 아직 v{live} — 승인하면 v{flow.draftV} 로 덮어씁니다.</>}
+        : <><DeployLink target={flow.dest} /> 에는 아직 v{live} — 승인하면 draft 가 v{flow.draftV} 로 확정되어 덮어씁니다.</>}
     </Callout>
   );
 }
@@ -130,7 +131,7 @@ export function DocWorkspace({ flow, meta, editor }: { flow: Flow; meta?: ReactN
         <div className={styles.railHead}>
           {railOpen && <span>버전 {flow.versions.length}{flow.draft ? " + draft" : ""}</span>}
           {railOpen && (
-            <Tooltip content="버전은 불변 — 수정은 draft 로 쌓이고, 승인하면 다음 버전으로 확정됩니다.">
+            <Tooltip content="버전은 불변. draft 는 문서당 하나(번호 없음) — 다시 고치면 덮어쓰고, 승인하면 다음 버전으로 확정됩니다.">
               <span className={styles.railHint} aria-label="버전 규칙"><Icon name="info" size={12} /></span>
             </Tooltip>
           )}
@@ -146,7 +147,7 @@ export function DocWorkspace({ flow, meta, editor }: { flow: Flow; meta?: ReactN
               const isDraft = !!flow.draft && n === flow.draftV;
               return (
                 <button key={n} type="button" role="option" aria-selected={flow.selected === n} data-active={flow.selected === n || undefined} data-draft={isDraft || undefined} className={styles.miniItem} onClick={() => flow.setSelected(n)}>
-                  v{n}{isDraft && <span className={styles.miniDraft}>draft</span>}
+                  {isDraft ? <span className={styles.miniDraft}>draft</span> : `v${n}`}
                 </button>
               );
             })}
@@ -159,7 +160,7 @@ export function DocWorkspace({ flow, meta, editor }: { flow: Flow; meta?: ReactN
             <div className={styles.toolbar}>
               <Row tight>
                 <VersionStatus flow={flow} />
-                <Subtle>v{ver.v} · {authorLabel(ver.author)} · {fmtDateTime(ver.at)}</Subtle>
+                <Subtle>{ver.draft ? "draft" : `v${ver.v}`} · {authorLabel(ver.author)} · {fmtDateTime(ver.at)}</Subtle>
                 {!flow.isLatest && <Button size="xs" variant="ghost" onClick={() => flow.setSelected(flow.draft ? flow.draftV : flow.versions.length)}>최신으로</Button>}
               </Row>
               <Row tight>
@@ -174,7 +175,7 @@ export function DocWorkspace({ flow, meta, editor }: { flow: Flow; meta?: ReactN
                 before={prev?.body ?? ""}
                 after={ver.body}
                 beforeLabel={prev ? `v${prev.v}` : "첫 버전 — 이전 버전 없음"}
-                afterLabel={`v${ver.v}${ver.draft ? " · draft" : ""}`}
+                afterLabel={ver.draft ? "draft" : `v${ver.v}`}
               />
             ) : (
               <Panel subtle><Prose text={ver.body} /></Panel>

@@ -19,9 +19,11 @@ import { TaskDrawer } from "@/app/projects/[id]/tasks/_drawer";
 import {
   LABEL,
   TODAY,
+  approvals,
   byProject,
   contracts,
   daysUntil,
+  findDocLike,
   fmtDate,
   getContext,
   getDeliverable,
@@ -55,7 +57,7 @@ interface Item {
   /** 화면 키 (업무 이력은 업무 id + 순번) */
   id: string;
   /** 어디서 왔나 — Drawer·이동 대상 */
-  src: { type: "context" | "contract" | "run"; id: string } | { type: "task"; id: string };
+  src: { type: "context" | "contract" | "run" | "task" | "approval"; id: string };
   projectId: string;
   title: string;
   /** 원본 종류 (회의록·대화·실행 결과·업무 이력 …) */
@@ -166,7 +168,7 @@ export function TimelineBoard({
   /** 연결을 따라 기간 밖 사건으로 이동할 때 — 페이지가 기간을 그 날짜까지 넓힌다 */
   onRevealDate?: (d: Date) => void;
 }) {
-  const { extraVersions, role } = usePreview();
+  const { extraVersions, role, approvalDecisions } = usePreview();
   const { toast } = useToast();
   const [open, setOpen] = useState<KEntry | null>(null);
   const [lanes, setLanes] = useState<Set<LaneKey>>(() => new Set(ALL_LANES));
@@ -194,6 +196,17 @@ export function TimelineBoard({
             version: vcount(c.id, c.versions.length), ...lineageOf(c.id),
           }] : [];
         }),
+        // 결정 — 승인 목록에서 승인·반려된 것. 근거는 그 승인의 대상(업무·실행·문서·리스크…)
+        ...approvals.filter((a) => a.projectId === pid && (approvalDecisions[a.id] ?? a.state) !== "pending").map((a) => {
+          const decided = approvalDecisions[a.id] ?? a.state;
+          return {
+            id: `ap:${a.id}`, src: { type: "approval" as const, id: a.id }, projectId: pid,
+            title: `${LABEL.approvalKind[a.kind]} ${decided === "approved" ? "승인" : "반려"} · ${a.title}`, srcLabel: "승인 목록",
+            lane: "decision" as LaneKey, at: a.requestedAt, who: decided === "approved" ? "승인" : "반려", version: 1,
+            parents: [{ id: a.ref.id, title: findDocLike(a.ref.id)?.title ?? getTask(a.ref.id)?.title ?? getRun(a.ref.id)?.summary ?? a.ref.id, via: "승인 근거" }],
+            children: [],
+          };
+        }),
         // 계약은 변경 계약(CR)만 — 범위 변경 사건. 나머지 계약 문서는 지식 › 계약문서에서
         ...contracts.filter((c) => c.projectId === pid && c.title.includes("변경")).map((c) => ({
           id: c.id, src: { type: "contract" as const, id: c.id }, projectId: pid, title: c.title, srcLabel: "변경 계약",
@@ -218,7 +231,7 @@ export function TimelineBoard({
         }),
       ])
       .sort((a, b) => parseLocal(a.at).getTime() - parseLocal(b.at).getTime());
-  }, [pidKey, extraVersions]);
+  }, [pidKey, extraVersions, approvalDecisions]);
 
   /* 기간 안의 사건 */
   const all = useMemo(() => universe.filter((x) => { const t = parseLocal(x.at).getTime(); return t >= fromT && t <= toT; }), [universe, fromT, toT]);
@@ -306,7 +319,8 @@ export function TimelineBoard({
       return setOpenContract(ct);
     }
   };
-  const openItem = (c: Item) => openById(c.src.id);
+  // 승인 결정은 그 승인의 대상(문서·업무·실행 …)을 연다
+  const openItem = (c: Item) => openById(c.src.type === "approval" ? approvals.find((a) => a.id === c.src.id)?.ref.id ?? c.src.id : c.src.id);
   const selectMs = (id: string) => setSelectedId((s) => (s === id ? null : id));
 
   /* ── 연결 따라가기: 이동 · 이전 위치 · 흐름 강조 ── */

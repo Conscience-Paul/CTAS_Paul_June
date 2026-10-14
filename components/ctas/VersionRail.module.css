@@ -38,6 +38,12 @@
   padding-top: var(--space-0);
 }
 
+/* draft 표시는 선택 여부와 무관하게 경고색 (선택 시 .v 의 primary 보다 우선) */
+.item .v.vDraft,
+.item[data-active] .v.vDraft {
+  color: var(--warning);
+}
+
 .item[data-active] .v {
   color: var(--primary);
 }

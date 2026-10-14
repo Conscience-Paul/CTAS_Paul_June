@@ -1,0 +1,705 @@
+/* 운영 › 인사이트 — 영향 표 · Nora 제안 목록(지금+지난) · 제안 서랍 · 근거(접음). 강조 = primary, 기준 = 중립. */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.h2 {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--fg-strong);
+}
+
+.h2Sub {
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-normal, 400);
+  color: var(--fg-subtle);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+}
+
+.ellipsis {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cellStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0);
+  min-width: 0;
+  font-size: var(--text-sm);
+  color: var(--fg-strong);
+}
+
+.cellSub {
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+}
+
+.num {
+  text-align: right;
+}
+
+.patternTag {
+  flex-shrink: 0;
+  padding: 0 var(--space-2);
+  font-size: var(--text-2xs);
+  line-height: 1.8;
+  color: var(--fg-muted);
+  background: var(--bg-subtle);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.empty {
+  padding: var(--space-6) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--fg-subtle);
+  text-align: center;
+}
+
+/* ── 1. 영향 표 ── */
+.impactHead,
+.impactRow {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1.3fr) minmax(10rem, 0.9fr) 6rem minmax(0, 2fr);
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+}
+
+.impactHead {
+  padding-block: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.impactRow + .impactRow {
+  border-top: 1px solid var(--border);
+}
+
+.projectName {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-strong);
+  text-decoration: none;
+}
+
+.projectName:hover .ellipsis {
+  color: var(--primary);
+}
+
+.kind {
+  flex-shrink: 0;
+  padding: 0 var(--space-1);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.stageNow {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-normal, 400);
+  color: var(--fg-subtle);
+}
+
+.delay {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--fg-strong);
+}
+
+.delay[data-high] {
+  color: var(--warning);
+}
+
+.note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+/* ── 2. Nora 제안 목록 ── */
+.listHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.chips {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--control-h-sm);
+  padding: 0 var(--space-3);
+  font: inherit;
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.chip[data-active] {
+  color: var(--fg-strong);
+  background: var(--bg-subtle);
+  border-color: var(--fg-strong);
+}
+
+.plist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-right: var(--space-3);
+}
+
+.prow + .prow {
+  border-top: 1px solid var(--border);
+}
+
+/* 결정 대기 — 왼쪽 강조선 */
+.prow[data-pending] {
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+/* 줄 전체가 버튼 — 누르면 서랍 */
+.prowMain {
+  display: grid;
+  grid-template-columns: 4rem 5rem minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-4);
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-4);
+  font: inherit;
+  text-align: left;
+  color: var(--fg-subtle);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.prowMain:hover {
+  background: var(--bg-subtle);
+}
+
+.prowMain > svg {
+  align-self: center;
+}
+
+.prowDate {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--fg-strong);
+}
+
+.year {
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+}
+
+.prowMetric {
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
+  color: var(--fg-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.prowMetricSm {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+.prowBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.prowTop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.prowFinding {
+  min-width: 0;
+  font-size: var(--text-sm);
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prowProposal {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-strong);
+}
+
+.proposalLabel {
+  flex-shrink: 0;
+  font-size: var(--text-2xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--primary);
+}
+
+.prowFoot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+}
+
+.prowFoot > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.prowActions {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.effect {
+  font-weight: var(--font-weight-medium);
+  color: var(--success);
+}
+
+/* ── 서랍 ── */
+.drawerMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.drawerBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding-top: var(--space-4);
+}
+
+.dHero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.hero {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  color: var(--fg-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.finding {
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--fg);
+}
+
+.dResult {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+}
+
+.dResult[data-tone="good"] {
+  color: var(--success);
+}
+
+.dSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dTitle {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--fg-strong);
+}
+
+.evTable {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.evRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 6rem minmax(0, 1.4fr);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+
+.evRow + .evRow {
+  border-top: 1px solid var(--border);
+}
+
+.evValue {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--fg-strong);
+  text-align: right;
+}
+
+.cases {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.case {
+  margin: 0;
+  padding: var(--space-3);
+  background: var(--bg-subtle);
+  border-left: 3px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.case blockquote {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--fg-strong);
+}
+
+.case figcaption {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+}
+
+.method,
+.impacts,
+.others {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.method li {
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+}
+
+.method li::before {
+  content: "· ";
+}
+
+.impacts li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--fg-strong);
+}
+
+.impacts li > svg {
+  margin-top: var(--space-0);
+  flex-shrink: 0;
+  color: var(--primary);
+}
+
+.others button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  color: var(--fg-strong);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.others button:hover {
+  border-color: var(--primary);
+}
+
+.others .prowDate {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+}
+
+/* 반기별 추이 — 값 · 막대 · 기간 */
+.trend {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.trendCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  width: 3.5rem;
+}
+
+.trendValue {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-strong);
+}
+
+.trendTrack {
+  display: flex;
+  align-items: flex-end;
+  height: 4rem;
+}
+
+.trendBar {
+  display: block;
+  width: 14px; /* lint-hardcoded: ignore */
+  min-height: 2px; /* lint-hardcoded: ignore */
+  background: var(--border-strong);
+  border-radius: 4px 4px 0 0; /* lint-hardcoded: ignore — 데이터 끝만 둥글게 */
+}
+
+.trendBar[data-last] {
+  background: var(--primary);
+}
+
+.trendPeriod {
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+  white-space: nowrap;
+}
+
+/* ── 막대 ── */
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr) 3.5rem;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.barLabel {
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.barTrack {
+  position: relative;
+  height: 10px; /* lint-hardcoded: ignore */
+}
+
+.pairBars {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* lint-hardcoded: ignore — 막대 사이 2px 간격 */
+}
+
+.bar {
+  display: block;
+  height: 10px; /* lint-hardcoded: ignore */
+  border-radius: 0 4px 4px 0; /* lint-hardcoded: ignore — 데이터 끝만 둥글게 */
+}
+
+.pairBars .bar {
+  height: 8px; /* lint-hardcoded: ignore */
+}
+
+.bar[data-tone="actual"] {
+  background: var(--primary);
+}
+
+.bar[data-tone="plan"] {
+  background: var(--border-strong);
+}
+
+.barValue {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--fg-strong);
+  text-align: right;
+}
+
+.refLine {
+  position: absolute;
+  top: -3px; /* lint-hardcoded: ignore */
+  bottom: -3px; /* lint-hardcoded: ignore */
+  width: 1px;
+  background: var(--fg-muted);
+  z-index: 1;
+}
+
+.refNote {
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+}
+
+/* ── 3. 근거 데이터 ── */
+.evidence {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  padding-top: var(--space-3);
+}
+
+@media (max-width: 1100px) {
+  .evidence {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+
+.legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.swatch {
+  width: var(--space-3);
+  height: var(--space-2);
+  border-radius: var(--radius-xs);
+}
+
+.swatch[data-tone="actual"] {
+  background: var(--primary);
+}
+
+.swatch[data-tone="plan"] {
+  background: var(--border-strong);
+}
+
+.similar {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.similar li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.similar li + li {
+  border-top: 1px solid var(--border);
+}
+
+.similarity {
+  flex-shrink: 0;
+  width: 3rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--fg-strong);
+}
+
+.similarText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+}
+
+.footnote {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+}
+
+.footnote a {
+  color: var(--fg-muted);
+}

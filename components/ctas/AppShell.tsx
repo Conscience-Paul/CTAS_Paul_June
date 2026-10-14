@@ -29,7 +29,6 @@ import {
 } from "@/components/ctas/ctds";
 import {
   NOTIFICATION_ICON,
-  approvals,
   fmtDateTime,
   notifications,
   byProject,
@@ -43,6 +42,7 @@ import { usePreview } from "@/lib/preview-state";
 import { AiPanel } from "./AiPanel";
 import { DocPeek } from "./DocPeek";
 import { DocTree } from "./DocTree";
+import { useAllApprovals } from "./useApprovals";
 import { PreviewPane } from "./PreviewPane";
 import styles from "./AppShell.module.css";
 
@@ -60,6 +60,7 @@ const AREAS: { id: Area; icon: IconName; label: string; home: string }[] = [
 /** 라우트 → 영역 */
 function areaFor(pathname: string): Area {
   const seg = pathname.split("/").filter(Boolean);
+  // 승인 목록·투두는 대시보드 소속 — "대시보드만 봐도 된다". 운영은 비즈니스, 개발은 엔지니어 영역
   if (seg.length === 0 || seg[0] === "approvals" || seg[0] === "todo") return "dashboard";
   if (seg[0] === "ops") return "ops";
   if (seg[0] === "knowledge") return "knowledge";
@@ -90,7 +91,6 @@ function Crumbs() {
   const projectSub: Record<string, string> = {
     context: "컨텍스트",
     tasks: "업무",
-    risks: "리스크",
     conflicts: "충돌",
     deliverables: "산출물",
     settings: "프로젝트 설정",
@@ -161,7 +161,7 @@ const PANEL_MAX = 480;
 function ShellSidebar() {
   const pathname = usePathname() ?? "/";
   const router = useRouter();
-  const { approvalDecisions, projectId, setProjectId, aiOpen, setAiOpen } = usePreview();
+  const { projectId, setProjectId, aiOpen, setAiOpen } = usePreview();
 
   // 라우트에서 유도한 영역을 기본으로, Rail 클릭으로 미리보기 전환 허용. 라우트가 바뀌면 재동기화.
   const routeArea = areaFor(pathname);
@@ -193,7 +193,8 @@ function ShellSidebar() {
   }
 
   const pid = projectId;
-  const pendingApprovals = approvals.filter((a) => (approvalDecisions[a.id] ?? a.state) === "pending").length;
+  // 목업 승인 + 문서 draft — 승인 목록과 같은 숫자
+  const pendingApprovals = useAllApprovals().pending.length;
   const blockedTasks = byProject.tasks(pid).filter((t) => t.state === "blocked").length;
 
   const is = (href: string) => pathname === href || pathname === href + "/";
@@ -212,6 +213,7 @@ function ShellSidebar() {
   );
 
   const panels: Record<Area, ReactNode> = {
+    // 대시보드 = "여기만 봐도 된다" — 개요 · 승인 목록 · 투두
     dashboard: (
       <Sidebar.Section>
         {item("/", "house", "개요", { exact: true })}
@@ -260,6 +262,8 @@ function ShellSidebar() {
   };
 
   const areaMeta = AREAS.find((a) => a.id === area)!;
+  // 대시보드는 메뉴 패널 없이 Rail 만
+  const hasPanel = panels[area] != null;
 
   return (
     <div className={styles.split}>
@@ -303,7 +307,7 @@ function ShellSidebar() {
       </div>
 
       {/* Panel — « 로 접으면 좁은 띠로 남고 같은 자리의 » 로 다시 펼친다. 프로필은 Rail 하단 아바타로 충분해 패널엔 두지 않음 */}
-      {!panelOpen && (
+      {hasPanel && !panelOpen && (
         <div className={styles.panelCollapsed}>
           <Tooltip content={`${areaMeta.label} 메뉴 펼치기`} side="right">
             <IconButton size="sm" variant="ghost" icon={<Icon name="caret-double-right" />} aria-label="메뉴 펼치기" onClick={() => setPanelOpen(true)} />
@@ -311,7 +315,7 @@ function ShellSidebar() {
           <span className={styles.panelCollapsedTitle}>{areaMeta.label}</span>
         </div>
       )}
-      {panelOpen && (
+      {hasPanel && panelOpen && (
         <div className={styles.panelWrap} style={{ "--sidebar-w": `${panelW}px` } as React.CSSProperties}>
         <Sidebar>
           <Sidebar.Header>

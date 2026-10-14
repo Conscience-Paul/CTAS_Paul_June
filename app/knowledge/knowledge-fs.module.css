@@ -121,3 +121,22 @@
 .linkTitle:hover {
   color: var(--primary);
 }
+
+/* 연결 항목 — 누르면 근거 서랍. 링크처럼 보이는 버튼 */
+.linkBtn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  color: var(--fg);
+  cursor: pointer;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linkBtn:hover {
+  color: var(--primary);
+}

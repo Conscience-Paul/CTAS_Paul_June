@@ -15,7 +15,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { ApprovalState, ContextVersion, Role, Task } from "@/lib/mock";
+import type { Approval, ApprovalState, ContextVersion, Role, Task } from "@/lib/mock";
 import { notifications, tasks } from "@/lib/mock";
 
 export interface TaskGroup {
@@ -51,6 +51,10 @@ interface PreviewState {
 
   resolvedConflicts: Record<string, boolean>;
   resolveConflict: (id: string) => void;
+
+  /** 화면에서 새로 올린 승인 항목 (예: 인사이트 제안 반영 → 일정 변경). 승인 목록에 목업과 함께 보인다 */
+  extraApprovals: Approval[];
+  addApprovals: (a: Approval[]) => void;
 
   /** 접수 폼으로 만든 개발 항목 — 목 배열에 밀어 넣는다(세션 동안만) */
   addTask: (t: Task) => void;
@@ -140,6 +144,7 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
   const [extraVersions, setExtraVersions] = useState<Record<string, ContextVersion[]>>({});
   const [riskStatus, setRiskStatusMap] = useState<PreviewState["riskStatus"]>({});
   const [resolvedConflicts, setResolved] = useState<Record<string, boolean>>({});
+  const [extraApprovals, setExtraApprovals] = useState<Approval[]>([]);
   const [projectId, setProjectId] = useState("p-hanbit-ims");
   // 처음엔 현재 프로젝트 폴더에서 시작 — 매번 루트부터 내려가지 않도록
   const [kFolderId, setKFolderId] = useState<string | null>("kf-p-hanbit-ims");
@@ -210,6 +215,11 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
     setResolved((m) => ({ ...m, [id]: true }));
   }, []);
 
+  // 같은 id 는 한 번만
+  const addApprovals = useCallback((a: Approval[]) => {
+    setExtraApprovals((cur) => [...a.filter((x) => !cur.some((c) => c.id === x.id)), ...cur]);
+  }, []);
+
   const mentionDoc = useCallback((docId: string) => {
     setAiOpen(true);
     if (mentionHandler.current) mentionHandler.current(docId);
@@ -258,6 +268,8 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
       setRiskStatus,
       resolvedConflicts,
       resolveConflict,
+      extraApprovals,
+      addApprovals,
       addTask,
       taskVersion,
       taskGroups,
@@ -288,7 +300,7 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
       mentionDoc,
       registerMentionHandler,
     }),
-    [role, approvalDecisions, decideApproval, extraVersions, addVersion, drafts, saveDraft, discardDraft, publishDraft, drivePaths, riskStatus, setRiskStatus, resolvedConflicts, resolveConflict, addTask, taskVersion, taskGroups, addTaskGroup, removeTaskGroup, projectId, kFolderId, contractFolderId, openDocId, peekDocId, aiOpen, readNotifs, markRead, markAllRead, previewOpen, previewUrl, openPreview, closePreview, askAi, registerAskHandler, mentionDoc, registerMentionHandler],
+    [role, approvalDecisions, decideApproval, extraVersions, addVersion, drafts, saveDraft, discardDraft, publishDraft, drivePaths, riskStatus, setRiskStatus, resolvedConflicts, resolveConflict, extraApprovals, addApprovals, addTask, taskVersion, taskGroups, addTaskGroup, removeTaskGroup, projectId, kFolderId, contractFolderId, openDocId, peekDocId, aiOpen, readNotifs, markRead, markAllRead, previewOpen, previewUrl, openPreview, closePreview, askAi, registerAskHandler, mentionDoc, registerMentionHandler],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

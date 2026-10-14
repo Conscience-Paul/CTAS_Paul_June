@@ -50,7 +50,7 @@ export const aiScenarios: AiScenario[] = [
           { id: "ctx-doc-sap-spec", label: "SAP 명세서" },
           { id: "cf-3", label: "충돌 cf-3" },
         ],
-        action: { label: "v4 draft 로 적용", effect: "version:ctx-req-spec" },
+        action: { label: "draft 로 적용", effect: "version:ctx-req-spec" },
       },
     ],
   },
@@ -88,7 +88,8 @@ export const aiScenarios: AiScenario[] = [
     ],
   },
   {
-    route: "/projects/p-hanbit-ims/risks",
+    // 리스크는 승인 목록(리스크 대응)에서 다룬다
+    route: "/approvals",
     suggestions: ["미응답 리마인드 초안 보여줘", "검수 연기하면 인수 일정 영향은?", "리스크 우선순위 정리"],
     turns: [
       { role: "user", text: "검수 연기하면 인수 일정 영향은?" },
@@ -132,7 +133,7 @@ export const aiScenarios: AiScenario[] = [
           { id: "risk-noresp", label: "리스크: 미응답" },
         ],
         action: {
-          label: "v2 draft 로 적용",
+          label: "draft 로 적용",
           effect: "version:ct-hanbit-cr1",
           payload: {
             summary: "AI 보완 — §3 일정(인수 12/19, 주 단위 순연) · §4 대금(50/50) 추가",

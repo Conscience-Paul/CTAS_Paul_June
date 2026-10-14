@@ -56,7 +56,8 @@ export function VersionRail({
           className={[styles.item, styles.new].join(" ")}
           onClick={() => onSelect(draftV)}
         >
-          <span className={styles.v}>v{draftV}</span>
+          {/* draft 는 번호 없음 — 승인돼야 다음 번호가 붙는다 */}
+          <span className={[styles.v, styles.vDraft].join(" ")}>draft</span>
           <span className={styles.body}>
             <span className={styles.summary}>{draft.summary}</span>
             <span className={styles.meta}>
@@ -64,7 +65,6 @@ export function VersionRail({
               {authorLabel(draft.author)}
               <span>·</span>
               {fmtDateTime(draft.at)}
-              <Badge size="sm" variant="soft" status="warning">draft</Badge>
             </span>
           </span>
         </button>

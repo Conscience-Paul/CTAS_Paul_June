@@ -1,60 +1,69 @@
 "use client";
 
 /**
- * 프로젝트 개요 = 운영(Operations) 화면.
- * 단계 트래커 · 단계 게이트 · 마일스톤 · 담당자 · 진행 모니터링 · 리스크 요약.
+ * 프로젝트 개요 = 운영(Operations) 화면. "이 프로젝트 괜찮나? 내가 뭘 해야 하나?"에만 답한다.
+ *   상태 한 줄  — 단계(+ 다음 단계 게이트, 펼치기) · 다음 마일스톤 1건
+ *   지금 처리할 것 — 막힌 업무(한 건씩) + 승인 대기를 승인 종류별 한 줄로(리스크 대응 포함). 급한 순, 누르면 서랍
+ *   요약 한 줄  — 업무 진행 숫자 + 업무·타임라인 바로가기
+ *   프로젝트 정보 — 담당자 · 계약·정책 (맨 아래, 항상)
  */
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { Avatar, Badge, Button, Drawer, DropdownMenu, EmptyState, Icon, IconButton, type IconName } from "@/components/ctas/ctds";
+import { KV, MilestoneBadge, Muted, Page, Panel, Row, SeverityBadge, Stack, Strong, Subtle } from "@/components/ctas/ui";
+import { TaskDrawer } from "@/app/projects/[id]/tasks/_drawer";
+import { useAllApprovals } from "@/components/ctas/useApprovals";
 import {
-  Avatar,
-  Badge,
-  Button,
-  Callout,
-  Checkbox,
-  EmptyState,
-  Icon,
-  ListItem,
-  MetricCard,
-  Stepper,
-} from "@/components/ctas/ctds";
-import {
-  Grid,
-  KV,
-  MilestoneBadge,
-  Muted,
-  Page,
-  PageHeader,
-  Panel,
-  Row,
-  Section,
-  SeverityBadge,
-  Split,
-  Stack,
-  Strong,
-  Subtle,
-  TaskStateBadge,
-  TextLink, List } from "@/components/ctas/ui";
-import {
+  APPROVAL_ICON,
   LABEL,
   STAGES,
   byProject,
   daysUntil,
   fmtDate,
   getCompliance,
-  getContext,
   getMember,
   getProject,
-  getTask,
+  getRisk,
   projectCustomer,
+  type Approval,
+  type ApprovalKind,
+  type Task,
 } from "@/lib/mock";
 import { usePreview } from "@/lib/preview-state";
+import styles from "./overview.module.css";
+
+/** 지금 처리할 것 한 줄 — 누르면 서랍 */
+interface Act {
+  key: string;
+  /** 작을수록 급함 */
+  rank: number;
+  /** 왼쪽 칸 — 막힌 업무 또는 승인 종류 */
+  label: string;
+  icon: IconName;
+  tone: "danger" | "primary" | "muted";
+  lead?: React.ReactNode;
+  title: string;
+  sub?: string;
+  meta?: string;
+  open: () => void;
+}
+
+/** 승인 종류별 급한 정도 — 작을수록 위 */
+const KIND_RANK: Partial<Record<ApprovalKind, number>> = { dev_release: 2, schedule: 2, risk: 2, dev_result: 3, customer_send: 3, knowledge_conflict: 3, scope: 3, triage: 3, dev_start: 3, knowledge_confirm: 4, doc_publish: 4 };
+
+const dday = (iso: string) => { const d = daysUntil(iso); return d === 0 ? "오늘" : d > 0 ? `D-${d}` : `${-d}일 지남`; };
 
 export default function ProjectOverview() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const project = getProject(id);
-  const { askAi, riskStatus } = usePreview();
+  const { askAi } = usePreview();
+  const { pending } = useAllApprovals();
+  const [gateOpen, setGateOpen] = useState(false);
+  const [openTask, setOpenTask] = useState<Task | null>(null);
+  const [openKind, setOpenKind] = useState<ApprovalKind | null>(null);
 
   if (!project) {
     return (
@@ -67,145 +76,158 @@ export default function ProjectOverview() {
   const customer = projectCustomer(project.id);
   const compliance = customer && getCompliance(customer.complianceProfileId);
   const tasks = byProject.tasks(project.id);
-  const milestones = byProject.milestones(project.id);
-  const risks = byProject.risks(project.id).filter((r) => (riskStatus[r.id] ?? r.status) === "open");
   const stageIndex = STAGES.findIndex((s) => s.id === project.stage);
   const nextStage = STAGES[stageIndex + 1];
+  const gateDone = project.gate.filter((g) => g.done).length;
 
   const done = tasks.filter((t) => t.state === "done" || t.state === "verified").length;
+  const inProgress = tasks.filter((t) => t.state === "in_progress").length;
   const blocked = tasks.filter((t) => t.state === "blocked");
-  const waitingCustomer = tasks.filter((t) => t.blockedReason?.includes("고객")).length;
   const overdue = tasks.filter((t) => t.due && daysUntil(t.due) < 0 && t.state !== "done" && t.state !== "verified").length;
-  const gateDone = project.gate.filter((g) => g.done).length;
+
+  // 다음 마일스톤 1건 — 아직 안 끝난 것 중 가장 이른 기한
+  const nextMs = byProject.milestones(project.id).filter((m) => m.state !== "done").sort((a, b) => a.due.localeCompare(b.due))[0];
+
+  // 지금 처리할 것 — 막힌 업무 + 이 프로젝트의 승인 대기(리스크 대응 포함)를 승인 종류별로.
+  //   막힌 업무는 한 건씩, 승인은 종류마다 한 줄(1건이면 그 제목). 누르면 서랍.
+  //   급한 순: 치명 리스크 → 막힌 업무 → 운영 배포·일정 변경·리스크 → 그 밖의 승인 → 문서
+  const myApprovals = pending.filter((a) => a.projectId === project.id);
+  const byKind = new Map<ApprovalKind, Approval[]>();
+  myApprovals.forEach((a) => byKind.set(a.kind, [...(byKind.get(a.kind) ?? []), a]));
+  const sevOf = (a: Approval) => (a.ref.type === "risk" ? getRisk(a.ref.id)?.severity : undefined);
+
+  const acts: Act[] = [
+    ...blocked.map((t): Act => ({
+      key: t.id, rank: 1, label: "막힌 업무", icon: "warning", tone: "danger",
+      title: t.title, sub: t.blockedReason ? `막힌 이유 — ${t.blockedReason}` : undefined, meta: t.due ? dday(t.due) : undefined,
+      open: () => setOpenTask(t),
+    })),
+    ...[...byKind.entries()].map(([kind, items]): Act => {
+      const critical = items.some((a) => sevOf(a) === "critical");
+      const top = items.find((a) => sevOf(a) === "critical") ?? items[0];
+      return {
+        key: kind,
+        rank: critical ? 0 : KIND_RANK[kind] ?? 3,
+        label: LABEL.approvalKind[kind],
+        icon: APPROVAL_ICON[kind],
+        tone: kind === "risk" ? "danger" : "primary",
+        lead: sevOf(top) ? <SeverityBadge severity={sevOf(top)!} /> : undefined,
+        title: items.length === 1 ? top.title : `${top.title} 외 ${items.length - 1}건`,
+        sub: items.length === 1 ? top.message : `${LABEL.approvalKind[kind]} ${items.length}건 대기`,
+        meta: fmtDate(top.requestedAt),
+        open: () => setOpenKind(kind),
+      };
+    }),
+  ].sort((a, b) => a.rank - b.rank);
+  const kindItems = openKind ? byKind.get(openKind) ?? [] : [];
 
   return (
     <Page wide>
-      <PageHeader
-        eyebrow={<><Badge size="sm" variant="soft">{project.kind}</Badge>{customer?.name} · {customer?.industry}</>}
-        title={project.name}
-        lead={project.summary}
-        actions={
-          <>
-            <Button size="sm" variant="ghost" leftIcon={<Icon name="warning-circle" />} asChild>
-              <Link href={`/projects/${project.id}/risks`}>리스크 {risks.length > 0 ? risks.length : ""}</Link>
-            </Button>
-            <Button size="sm" variant="ghost" leftIcon={<Icon name="sliders" />} asChild>
-              <Link href={`/projects/${project.id}/settings`}>프로젝트 설정</Link>
-            </Button>
-            <Button size="sm" variant="outline" leftIcon={<Icon name="chat-circle" />} onClick={() => askAi("이번 주 검수 가능한가?")}>
-              이번 주 검수 가능한가?
-            </Button>
-            <Button size="sm" variant="primary" leftIcon={<Icon name="clipboard-text" />} asChild>
-              <Link href={`/projects/${project.id}/deliverables`}>주간 보고 생성</Link>
-            </Button>
-          </>
-        }
-      />
+      {/* 헤더 — 제목 + 고객·유형·기간은 작게. 버튼은 주간 보고 하나, 나머지는 ⋯ */}
+      <header className={styles.head}>
+        <div className={styles.titleBlock}>
+          <h1 className={styles.title}>{project.name}</h1>
+          <span className={styles.meta}>
+            <Badge size="sm" variant="soft">{project.kind}</Badge>
+            {customer?.name} · {project.startDate} – {project.endDate}
+          </span>
+        </div>
+        <div className={styles.headActions}>
+          <Button size="sm" variant="primary" leftIcon={<Icon name="clipboard-text" />} asChild>
+            <Link href={`/projects/${project.id}/deliverables`}>주간 보고 생성</Link>
+          </Button>
+          <DropdownMenu>
+            <DropdownMenu.Trigger asChild>
+              <IconButton size="sm" variant="ghost" icon={<Icon name="dots-three" />} aria-label="더보기" />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="end">
+              <DropdownMenu.Item leadingActions={[<Icon key="a" name="chat-circle" />]} onSelect={() => askAi("이번 주 검수 가능한가?")}>AI에게 — 이번 주 검수 가능한가?</DropdownMenu.Item>
+              <DropdownMenu.Item leadingActions={[<Icon key="s" name="sliders" />]} onSelect={() => router.push(`/projects/${project.id}/settings`)}>프로젝트 설정</DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu>
+        </div>
+      </header>
 
-      {/* 단계 트래커 */}
-      <Section title="단계" icon="steps" hint={`${LABEL.stage[project.stage]} 진행 중`}>
-        <Panel>
-          <Stepper activeIndex={stageIndex} orientation="horizontal" marker="number">
-            {STAGES.map((s) => (
-              <Stepper.Item key={s.id} title={s.label} hint={s.hint} />
+      {/* 상태 한 줄 — 단계(+ 게이트 펼치기) · 다음 마일스톤 */}
+      <Panel>
+        <div className={styles.statusRow}>
+          <div className={styles.stages} aria-label="단계">
+            {STAGES.map((s, i) => (
+              <span key={s.id} className={styles.stage} data-state={i < stageIndex ? "past" : i === stageIndex ? "current" : "future"} title={s.hint}>
+                {i < stageIndex && <Icon name="check" size={10} />}
+                {s.label}
+              </span>
             ))}
-          </Stepper>
-        </Panel>
-      </Section>
+            {nextStage && (
+              <button type="button" className={styles.gateBtn} aria-expanded={gateOpen} onClick={() => setGateOpen((o) => !o)}>
+                {nextStage.label} 게이트 <strong>{gateDone}/{project.gate.length}</strong>
+                <Icon name={gateOpen ? "caret-up" : "caret-down"} size={12} />
+              </button>
+            )}
+          </div>
+          {nextMs && (
+            <Link href="/ops/milestones" className={styles.nextMs} title="운영 › 타임라인에서 보기">
+              <Subtle>다음 마일스톤</Subtle>
+              <MilestoneBadge state={nextMs.state} />
+              <Strong>{nextMs.title}</Strong>
+              <Subtle>{fmtDate(nextMs.due)} ({dday(nextMs.due)})</Subtle>
+              <Icon name="caret-right" size={12} />
+            </Link>
+          )}
+        </div>
+        {gateOpen && (
+          <ul className={styles.gateList}>
+            {project.gate.map((g) => (
+              <li key={g.id} data-done={g.done || undefined}>
+                <Icon name={g.done ? "check-circle" : "square"} size={14} />
+                {g.label}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
 
-      {/* 진행 모니터링 */}
-      <Grid cols={4}>
-        <MetricCard label="업무 완료" value={`${done} / ${tasks.length}`} icon="check-circle" description={`진행 중 ${tasks.filter((t) => t.state === "in_progress").length}`} />
-        <MetricCard label="차단됨" value={blocked.length} icon="warning" description={`고객 응답 대기 ${waitingCustomer}`} trend={blocked.length > 0 ? "up" : "flat"} deltaLabel={blocked.length > 0 ? "이번 주 +2" : "변동 없음"} />
-        <MetricCard label="기한 초과" value={overdue} icon="clock" />
-        <MetricCard label="열린 리스크" value={risks.length} icon="warning-circle" description={risks.some((r) => r.severity === "critical") ? "치명 1건 포함" : undefined} href={`/projects/${project.id}/risks`} />
-      </Grid>
-
-      <Split>
-        <Stack style={{ gap: "var(--space-6)" }}>
-          {/* 단계 게이트 */}
-          <Section
-            title={nextStage ? `${nextStage.label} 단계 게이트` : "게이트"}
-            icon="seal-check"
-            hint={`${gateDone}/${project.gate.length} 충족`}
-            actions={<Button size="xs" variant="outline" disabled={gateDone < project.gate.length}>다음 단계로</Button>}
-          >
-            <Panel>
-              <Stack>
-                {project.gate.map((g) => {
-                  const ev = g.evidenceId ? getContext(g.evidenceId) : undefined;
-                  return (
-                    <Row key={g.id} style={{ justifyContent: "space-between" }}>
-                      <Checkbox checked={g.done} readOnly>{g.label}</Checkbox>
-                      {g.evidenceId && (
-                        <TextLink href={ev ? `/projects/${project.id}/context/${g.evidenceId}` : `/projects/${project.id}/deliverables/${g.evidenceId}`}>
-                          <Subtle>근거 ↗</Subtle>
-                        </TextLink>
-                      )}
-                    </Row>
-                  );
-                })}
-              </Stack>
-              {gateDone < project.gate.length && (
-                <Callout tone="warning" variant="outline" icon="warning-circle" title={`미충족 ${project.gate.length - gateDone}건`}>
-                  Pre-flight 엔진이 단계 게이트로 동작합니다. 미충족 항목은 연결된 업무·리스크에서 해결하세요.
-                </Callout>
-              )}
-            </Panel>
-          </Section>
-
-          {/* 마일스톤 */}
-          <Section title="마일스톤" icon="calendar-dots">
-            <List>
-              {milestones.map((m) => {
-                const d = daysUntil(m.due);
-                const linked = m.taskIds.map(getTask).filter(Boolean);
-                const linkedDone = linked.filter((t) => t!.state === "done" || t!.state === "verified").length;
-                return (
-                  <ListItem
-                    key={m.id}
-                    variant="activity"
-                    layout="stacked"
-                    leading={<MilestoneBadge state={m.state} />}
-                    from={<Row tight><Strong>{m.title}</Strong></Row>}
-                    body={
-                      <Row tight>
-                        <Subtle>{fmtDate(m.due)} · {getMember(m.ownerId)?.name}</Subtle>
-                        {linked.length > 0 && <Subtle>· 연결 업무 {linkedDone}/{linked.length}</Subtle>}
-                        {linked.map((t) => (
-                          <TaskStateBadge key={t!.id} state={t!.state} />
-                        ))}
-                      </Row>
-                    }
-                    meta={m.state === "done" ? "완료" : d < 0 ? `${-d}일 지남` : d === 0 ? "오늘" : `D-${d}`}
-                  />
-                );
-              })}
-            </List>
-          </Section>
-
-          {/* 리스크 요약 */}
-          <Section title="열린 리스크" icon="warning-circle" actions={<Button size="xs" variant="ghost" asChild><Link href={`/projects/${project.id}/risks`}>전체</Link></Button>}>
-            <List>
-              {risks.length === 0 && <EmptyState size="sm" icon="check-circle" title="열린 리스크 없음" />}
-              {risks.slice(0, 4).map((r) => (
-                <ListItem
-                  key={r.id}
-                  href={`/projects/${project.id}/risks`}
-                  variant="activity"
-                  layout="stacked"
-                  leading={<SeverityBadge severity={r.severity} />}
-                  from={<Subtle>{LABEL.riskKind[r.kind]}</Subtle>}
-                  body={r.title}
-                  meta={fmtDate(r.detectedAt)}
-                />
+      {/* 지금 처리할 것 */}
+      <section className={styles.section}>
+        <h2 className={styles.h2}>지금 처리할 것 <span className={styles.count}>{acts.length}</span></h2>
+        <Panel flush>
+          {acts.length === 0 ? (
+            <EmptyState size="sm" icon="check-circle" title="처리할 것이 없습니다" />
+          ) : (
+            <ul className={styles.acts}>
+              {acts.map((a) => (
+                <li key={a.key}>
+                  <button type="button" className={styles.act} data-tone={a.tone} onClick={a.open}>
+                    <span className={styles.actKind}><Icon name={a.icon} size={12} />{a.label}</span>
+                    {a.lead && <span className={styles.actLead}>{a.lead}</span>}
+                    <span className={styles.actText}>
+                      <span className={styles.actTitle}>{a.title}</span>
+                      {a.sub && <span className={styles.actSub}>{a.sub}</span>}
+                    </span>
+                    {a.meta && <span className={styles.actMeta}>{a.meta}</span>}
+                    <Icon name="caret-right" size={14} />
+                  </button>
+                </li>
               ))}
-            </List>
-          </Section>
-        </Stack>
+            </ul>
+          )}
+        </Panel>
+      </section>
 
-        <Stack style={{ gap: "var(--space-6)" }}>
-          <Section title="담당자" icon="user">
+      {/* 요약 한 줄 + 바로가기 */}
+      <div className={styles.summary}>
+        <span>
+          업무 <strong>{tasks.length}</strong>건 중 완료 <strong>{done}</strong> · 진행 <strong>{inProgress}</strong> · 차단 <strong data-warn={blocked.length > 0 || undefined}>{blocked.length}</strong> · 기한 초과 <strong data-warn={overdue > 0 || undefined}>{overdue}</strong>
+        </span>
+        <span className={styles.links}>
+          <Link href={`/projects/${project.id}/tasks`}>업무 →</Link>
+          <Link href="/ops/milestones">타임라인 →</Link>        </span>
+      </div>
+
+      {/* 프로젝트 정보 — 맨 아래에 항상 */}
+      <section className={styles.section}>
+        <h2 className={styles.h2}>프로젝트 정보</h2>
+          <div className={styles.info}>
             <Panel>
               <Stack>
                 {project.memberIds.map((mid) => {
@@ -226,9 +248,6 @@ export default function ProjectOverview() {
                 })}
               </Stack>
             </Panel>
-          </Section>
-
-          <Section title="계약·정책" icon="identification-card">
             <Panel>
               <KV
                 items={[
@@ -240,27 +259,41 @@ export default function ProjectOverview() {
                 ]}
               />
             </Panel>
-          </Section>
+          </div>
+      </section>
 
-          <Section title="차단된 업무" icon="warning">
-            <List>
-              {blocked.length === 0 && <EmptyState size="sm" icon="check-circle" title="없음" />}
-              {blocked.map((t) => (
-                <ListItem
-                  key={t.id}
-                  href={`/projects/${project.id}/tasks/${t.id}`}
-                  variant="activity"
-                  layout="stacked"
-                  leading={<Icon name="warning" size={16} />}
-                  from={<Strong>{t.title}</Strong>}
-                  body={<Subtle>{t.blockedReason}</Subtle>}
-                  meta={t.due ? `D${daysUntil(t.due) >= 0 ? "-" : "+"}${Math.abs(daysUntil(t.due))}` : ""}
-                />
-              ))}
-            </List>
-          </Section>
-        </Stack>
-      </Split>
+      {openTask && <TaskDrawer task={openTask} onClose={() => setOpenTask(null)} />}
+
+      {/* 승인 종류 서랍 — 이 프로젝트의 그 종류 승인 대기 목록. 하나씩 승인 목록에서 연다 */}
+      {openKind && (
+        <Drawer
+          open
+          onOpenChange={(o) => !o && setOpenKind(null)}
+          size="md"
+          title={`${LABEL.approvalKind[openKind]} ${kindItems.length}건`}
+          description={<Subtle>{project.name} · 승인 대기</Subtle>}
+          footer={
+            <Button variant="outline" rightIcon={<Icon name="arrow-right" />} asChild>
+              <Link href="/approvals">승인 목록에서 모두 보기</Link>
+            </Button>
+          }
+        >
+          <ul className={styles.kindList}>
+            {kindItems.map((a) => (
+              <li key={a.id}>
+                <Link href={`/approvals?open=${encodeURIComponent(a.id)}`} className={styles.kindItem}>
+                  <span className={styles.kindItemHead}>
+                    {sevOf(a) && <SeverityBadge severity={sevOf(a)!} />}
+                    <strong>{a.title}</strong>
+                  </span>
+                  <span className={styles.actSub}>{a.message}</span>
+                  <span className={styles.kindItemMeta}>{a.requestedBy} · {fmtDate(a.requestedAt)} <span>열기 →</span></span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Drawer>
+      )}
     </Page>
   );
 }
