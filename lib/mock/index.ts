@@ -20,6 +20,7 @@ import { deliverables, patterns, templates } from "./knowledge";
 import { customers, members, milestones, projects, complianceProfiles } from "./org";
 import { risks } from "./risks";
 import type {
+  ApprovalGroup,
   ApprovalKind,
   ConflictKind,
   ContextKind,
@@ -84,12 +85,16 @@ export const scenarioFor = (pathname: string) =>
     .filter((s) => pathname === s.route || pathname.startsWith(s.route === "/" ? "/" : s.route))
     .sort((a, b) => b.route.length - a.route.length)[0];
 
+/** 리스크는 따로 페이지가 없다 — 승인 목록의 "리스크 대응" 항목(승인 id = risk:<리스크 id>)으로 연다 */
+export const riskApprovalId = (riskId: string) => `risk:${riskId}`;
+export const riskHref = (riskId: string) => `/approvals?open=${encodeURIComponent(riskApprovalId(riskId))}`;
+
 /** 링크나 근거 id 가 어떤 종류의 엔티티인지 추정해 라우트를 만든다 */
 export const hrefFor = (id: string, projectId?: string): string | undefined => {
   const pid = projectId ?? getContext(id)?.projectId ?? getTask(id)?.projectId ?? getRisk(id)?.projectId ?? getDeliverable(id)?.projectId;
   if (id.startsWith("ctx-") && pid) return `/projects/${pid}/context/${id}`;
   if (id.startsWith("t-") && pid) return `/projects/${pid}/tasks/${id}`;
-  if (id.startsWith("risk-") && pid) return `/projects/${pid}/risks`;
+  if (id.startsWith("risk-")) return riskHref(id);
   if (id.startsWith("del-") && pid) return `/projects/${pid}/deliverables/${id}`;
   if (id.startsWith("ms-") && pid) return `/projects/${pid}`;
   if (id.startsWith("cf-") && pid) return `/projects/${pid}/conflicts`;
@@ -159,7 +164,20 @@ export const LABEL = {
   } satisfies Record<TaskKind, string>,
   severity: { low: "낮음", medium: "보통", high: "높음", critical: "치명" } satisfies Record<Severity, string>,
   triage: { join: "기존 업무 합류", new: "신규 업무", out_of_scope: "범위 밖", pending: "판정 대기" } satisfies Record<Triage, string>,
-  approvalKind: { triage: "분류", preflight: "사전 점검", result: "결과", customer_send: "고객 발송" } satisfies Record<ApprovalKind, string>,
+  approvalKind: {
+    doc_publish: "문서 배포",
+    knowledge_conflict: "지식 충돌",
+    knowledge_confirm: "지식 확정",
+    dev_start: "착수 승인",
+    dev_result: "구현 결과",
+    dev_release: "운영 배포",
+    triage: "요청 분류",
+    scope: "범위·변경요청",
+    schedule: "일정 변경",
+    risk: "리스크 대응",
+    customer_send: "고객 발송",
+  } satisfies Record<ApprovalKind, string>,
+  approvalGroup: { doc: "문서", dev: "개발", request: "요청", plan: "일정·리스크", external: "대외" } satisfies Record<ApprovalGroup, string>,
   conflictKind: {
     duplicate_task: "중복 업무",
     owner_overlap: "담당자 겹침",
@@ -182,6 +200,23 @@ export const LABEL = {
   milestoneState: { planned: "예정", at_risk: "위험", done: "완료", missed: "놓침" } satisfies Record<MilestoneState, string>,
   runState: { queued: "대기", running: "실행 중", submitted: "제출됨", approved: "승인됨", rejected: "반려됨", failed: "실패" } satisfies Record<RunState, string>,
 };
+
+/** 승인 유형 → 그룹 · 아이콘 (승인 목록·홈·투두 공용) */
+export const APPROVAL_GROUP: Record<ApprovalKind, ApprovalGroup> = {
+  doc_publish: "doc", knowledge_conflict: "doc", knowledge_confirm: "doc",
+  dev_start: "dev", dev_result: "dev", dev_release: "dev",
+  triage: "request", scope: "request",
+  schedule: "plan", risk: "plan",
+  customer_send: "external",
+};
+export const APPROVAL_ICON = {
+  doc_publish: "upload-simple", knowledge_conflict: "split-horizontal", knowledge_confirm: "seal-check",
+  dev_start: "steps", dev_result: "brackets-square", dev_release: "rows-plus-bottom",
+  triage: "tag", scope: "arrows-down-up",
+  schedule: "calendar-dots", risk: "warning-circle",
+  customer_send: "envelope",
+} as const satisfies Record<ApprovalKind, string>;
+export const APPROVAL_GROUP_ICON = { doc: "article", dev: "brackets-square", request: "tag", plan: "calendar-dots", external: "envelope" } as const satisfies Record<ApprovalGroup, string>;
 
 /** 상태 → Badge status 매핑 (CTDS Badge 는 success/warning/destructive/info 4종) */
 export const TONE = {

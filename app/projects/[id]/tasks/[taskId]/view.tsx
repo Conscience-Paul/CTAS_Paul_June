@@ -49,6 +49,7 @@ import {
   getProject,
   getTask,
   hrefFor,
+  riskHref,
   runsForTask,
   scenarioFor,
   type PreflightCheck,
@@ -276,7 +277,7 @@ export default function TaskDetail() {
               <Stack tight>
                 {risks.length === 0 && conflicts.length === 0 && <Subtle>없음</Subtle>}
                 {risks.map((r) => (
-                  <TextLink key={r.id} href={`/projects/${project.id}/risks`}>
+                  <TextLink key={r.id} href={riskHref(r.id)}>
                     <Row tight>
                       <SeverityBadge severity={r.severity} />
                       <span>{r.title}</span>

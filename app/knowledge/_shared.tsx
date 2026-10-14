@@ -14,7 +14,9 @@ import { KV, Panel, Row, Section, Subtle } from "@/components/ctas/ui";
 import {
   LABEL,
   TONE,
+  contracts,
   deployTargetOf,
+  findKEntry,
   fmtDateTime,
   getContext,
   getDeliverable,
@@ -30,6 +32,7 @@ import {
   type LinkRel,
 } from "@/lib/mock";
 import { findDocLike } from "@/lib/mock";
+import { usePreview } from "@/lib/preview-state";
 import styles from "./knowledge-fs.module.css";
 
 const REL_LABEL: Record<LinkRel, string> = {
@@ -40,6 +43,16 @@ const REL_LABEL: Record<LinkRel, string> = {
   evidences: "증거",
   conflicts_with: "충돌",
 };
+
+/** 연결 항목 제목 — 문서함 문서·계약은 근거 서랍으로 띄우고, 그 밖(업무 등)은 해당 화면으로 이동 */
+function HopTitle({ id, title }: { id: string; title: string }) {
+  const { setPeekDocId } = usePreview();
+  if (findKEntry(id) || contracts.some((c) => c.id === id)) {
+    return <button type="button" className={styles.linkBtn} title={title} onClick={() => setPeekDocId(id)}>{title}</button>;
+  }
+  const hr = hrefFor(id);
+  return hr ? <Link href={hr} className={styles.linkTitle} title={title}>{title}</Link> : <span className={styles.linkTitle} title={title}>{title}</span>;
+}
 
 export function entryTitle(e: KEntry) {
   if (e.type === "template") return e.item.name;
@@ -68,7 +81,8 @@ export function KnowledgeDrawer({ entry, inline, onClose, onAskAi }: { entry: KE
 
   const projectId = entry.type === "context" || entry.type === "deliverable" ? entry.item.projectId : runTask?.projectId;
   const project = projectId ? getProject(projectId) : undefined;
-  const links = entry.type === "context" || entry.type === "deliverable" ? linksFor(entry.id) : [];
+  // 근거·결정·구현·변경 링크는 계보(lineageOf)에 이미 합쳐져 있으니, 계보에 없는 관계(충돌·증거)만 따로
+  const otherLinks = entry.type === "context" || entry.type === "deliverable" ? linksFor(entry.id).filter((l) => l.rel === "conflicts_with" || l.rel === "evidences") : [];
   const linkedTasks = entry.type === "context" ? tasks.filter((t) => t.contextIds.includes(entry.id)) : [];
   // 계보 — 근거로 쓴 문서 / 이 문서로 만든 문서 (운영 › 마일스톤의 추적 타임라인·AI 답변과 같은 lineageOf)
   const lineage = entry.type === "context" || entry.type === "deliverable" || entry.type === "run" ? lineageOf(entry.id) : { parents: [], children: [] };
@@ -90,7 +104,7 @@ export function KnowledgeDrawer({ entry, inline, onClose, onAskAi }: { entry: KE
         editing ? (
           <>
             <Button variant="ghost" onClick={() => setEditing(false)}>취소</Button>
-            <Button variant="primary" leftIcon={<Icon name="check" />} onClick={save} disabled={draft.trim() === flow.editBase.trim()}>v{flow.draftV} draft 로 저장</Button>
+            <Button variant="primary" leftIcon={<Icon name="check" />} onClick={save} disabled={draft.trim() === flow.editBase.trim()}>draft 로 저장</Button>
           </>
         ) : (
           <>
@@ -105,7 +119,7 @@ export function KnowledgeDrawer({ entry, inline, onClose, onAskAi }: { entry: KE
       <Tabs value={tab} onValueChange={setTab} variant="underline" size="sm">
         <Tabs.List aria-label="문서 보기">
           <Tabs.Trigger value="content">문서 · 버전 {versions.length}{flow.draft ? " + draft" : ""}</Tabs.Trigger>
-          <Tabs.Trigger value="links">연결 {lineage.parents.length + lineage.children.length + linkedTasks.length}</Tabs.Trigger>
+          <Tabs.Trigger value="links">연결 {lineage.parents.length + lineage.children.length + otherLinks.length + linkedTasks.length}</Tabs.Trigger>
         </Tabs.List>
 
         <Tabs.Panel value="content">
@@ -162,48 +176,48 @@ export function KnowledgeDrawer({ entry, inline, onClose, onAskAi }: { entry: KE
 
         <Tabs.Panel value="links">
           <div className={styles.drawerBody}>
-            {links.length === 0 && linkedTasks.length === 0 && lineage.parents.length === 0 && lineage.children.length === 0 && <Subtle>연결된 항목이 없습니다.</Subtle>}
-            {(lineage.parents.length > 0 || lineage.children.length > 0) && (
-              <Section title="계보" icon="path" hint="어느 버전이 무엇을 근거로 썼는지">
+            {otherLinks.length === 0 && linkedTasks.length === 0 && lineage.parents.length === 0 && lineage.children.length === 0 && <Subtle>연결된 항목이 없습니다.</Subtle>}
+            {/* 근거 관계는 계보 하나로 — 버전 기록 + 근거·결정·구현·변경 링크를 합친 것 */}
+            {lineage.parents.length > 0 && (
+              <Section title={`이 문서의 근거 ${lineage.parents.length}`} icon="caret-left" hint="이 문서를 쓸 때 보고 쓴 것 · 어느 버전에서인지">
                 <Panel>
                   <div className={styles.linkList}>
-                    {lineage.parents.map((h) => {
-                      const hr = hrefFor(h.id);
-                      return (
-                        <div key={"p" + h.id} className={styles.linkRow}>
-                          <Badge size="sm" variant="soft">{h.via}</Badge>
-                          <Icon name="caret-left" size={12} />
-                          {hr ? <Link href={hr} className={styles.linkTitle} title={h.title}>{h.title}</Link> : <span className={styles.linkTitle} title={h.title}>{h.title}</span>}
-                        </div>
-                      );
-                    })}
-                    {lineage.children.map((h) => {
-                      const hr = hrefFor(h.id);
-                      return (
-                        <div key={"c" + h.id} className={styles.linkRow}>
-                          <Badge size="sm" variant="soft" status="info">{h.via}</Badge>
-                          <Icon name="arrow-right" size={12} />
-                          {hr ? <Link href={hr} className={styles.linkTitle} title={h.title}>{h.title}</Link> : <span className={styles.linkTitle} title={h.title}>{h.title}</span>}
-                        </div>
-                      );
-                    })}
+                    {lineage.parents.map((h) => (
+                      <div key={"p" + h.id} className={styles.linkRow}>
+                        <Badge size="sm" variant="soft">{h.via}</Badge>
+                        <HopTitle id={h.id} title={h.title} />
+                      </div>
+                    ))}
                   </div>
                 </Panel>
               </Section>
             )}
-            {links.length > 0 && (
-              <Section title="추적 링크" icon="line-segments">
+            {lineage.children.length > 0 && (
+              <Section title={`이 문서로 만든 문서 ${lineage.children.length}`} icon="arrow-right" hint="이 문서를 근거로 만들어진 것 · 그쪽의 어느 버전인지">
                 <Panel>
                   <div className={styles.linkList}>
-                    {links.map((l, i) => {
+                    {lineage.children.map((h) => (
+                      <div key={"c" + h.id} className={styles.linkRow}>
+                        <Badge size="sm" variant="soft" status="info">{h.via}</Badge>
+                        <HopTitle id={h.id} title={h.title} />
+                      </div>
+                    ))}
+                  </div>
+                </Panel>
+              </Section>
+            )}
+            {/* 계보로 표현되지 않는 관계만 — 충돌·증거 */}
+            {otherLinks.length > 0 && (
+              <Section title="다른 관계" icon="line-segments" hint="근거가 아닌 관계 — 충돌·증거">
+                <Panel>
+                  <div className={styles.linkList}>
+                    {otherLinks.map((l, i) => {
                       const other = l.from === entry.id ? l.to : l.from;
                       const title = getContext(other)?.title ?? getTask(other)?.title ?? getDeliverable(other)?.title ?? other;
-                      const h = hrefFor(other);
                       return (
                         <div key={i} className={styles.linkRow}>
                           <Badge size="sm" variant="soft" status={l.rel === "conflicts_with" ? "destructive" : undefined}>{REL_LABEL[l.rel]}</Badge>
-                          <Icon name={l.from === entry.id ? "arrow-right" : "caret-left"} size={12} />
-                          {h ? <Link href={h} className={styles.linkTitle}>{title}</Link> : <span className={styles.linkTitle}>{title}</span>}
+                          <HopTitle id={other} title={title} />
                         </div>
                       );
                     })}

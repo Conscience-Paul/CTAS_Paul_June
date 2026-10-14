@@ -204,7 +204,8 @@ export function AiPanel({ embedded = false }: { embedded?: boolean }) {
         basedOn: (turns.findLast?.((t) => t.role === "ai")?.sources ?? []).map((s) => s.id),
         body: payload.body,
       });
-      toast({ title: `v${base + 1} draft 생성됨`, description: "문서에서 이전 버전과 비교하고 승인하면 Google Drive 에 배포됩니다.", tone: "success" });
+      // draft 는 문서당 하나(번호 없음) — 이미 있으면 덮어쓴다
+      toast({ title: "draft 에 반영됨", description: `문서에서 v${base} 과 비교하고, 승인하면 v${base + 1} 로 확정·배포됩니다.`, tone: "success" });
     } else if (kind === "approve") {
       decideApproval(id, "approved");
       toast({ title: "승인됨", description: "승인 큐에서 제거됐습니다.", tone: "success" });

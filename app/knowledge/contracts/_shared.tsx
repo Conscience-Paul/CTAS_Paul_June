@@ -89,7 +89,7 @@ export function DocDrawer({ doc, delivery, inline, onDelivery, onClose, onAskAi 
         editing ? (
           <>
             <Button variant="ghost" onClick={() => setEditing(false)}>취소</Button>
-            <Button variant="primary" leftIcon={<Icon name="check" />} onClick={save} disabled={draft.trim() === flow.editBase.trim()}>v{flow.draftV} draft 로 저장</Button>
+            <Button variant="primary" leftIcon={<Icon name="check" />} onClick={save} disabled={draft.trim() === flow.editBase.trim()}>draft 로 저장</Button>
           </>
         ) : (
           <>

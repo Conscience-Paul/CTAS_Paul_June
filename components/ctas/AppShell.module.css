@@ -79,7 +79,6 @@
   background: var(--border);
   margin-block: var(--space-2);
 }
-
 .railFooter {
   display: flex;
   flex-direction: column;

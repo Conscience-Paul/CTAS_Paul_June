@@ -264,7 +264,21 @@ export interface AgentRun {
   deploy?: { at: string; env: string; verifiedBy: string; note: string };
 }
 
-export type ApprovalKind = "triage" | "preflight" | "result" | "customer_send";
+/**
+ * 승인 유형 — 사람이 결정하는 지점. 5그룹 11종.
+ *   문서: doc_publish(draft → vN 확정·배포) · knowledge_conflict(문서끼리 충돌 → 업데이트 draft) · knowledge_confirm(Nora 추출 후보 → 정식 지식)
+ *   개발: dev_start(착수·Nora 실행 허용) · dev_result(구현 결과 반영) · dev_release(운영 배포)
+ *   요청: triage(요청 분류) · scope(범위 판정·변경요청)
+ *   일정·리스크: schedule(마일스톤 기한 이동) · risk(리스크 수용·조치)
+ *   대외: customer_send(고객 발송)
+ */
+export type ApprovalKind =
+  | "doc_publish" | "knowledge_conflict" | "knowledge_confirm"
+  | "dev_start" | "dev_result" | "dev_release"
+  | "triage" | "scope"
+  | "schedule" | "risk"
+  | "customer_send";
+export type ApprovalGroup = "doc" | "dev" | "request" | "plan" | "external";
 export type ApprovalState = "pending" | "approved" | "rejected";
 
 export interface Approval {
@@ -275,8 +289,16 @@ export interface Approval {
   title: string;
   requestedBy: string;
   requestedAt: string;
-  /** 승인 근거 — Task, AgentRun, Risk 중 하나 */
-  ref: { type: "task" | "run" | "risk" | "deliverable"; id: string };
+  /** 승인 근거 — 업무·실행·리스크·산출물·문서(컨텍스트)·충돌·마일스톤·draft(문서 id) */
+  ref: { type: "task" | "run" | "risk" | "deliverable" | "context" | "conflict" | "milestone" | "draft"; id: string };
+  /** doc_publish — 배포할 draft (프리뷰 draft 가 아니라 목업에 실린 것) */
+  draft?: { summary: string; body: string; by: string };
+  /** knowledge_confirm — Nora 가 뽑은 지식 후보 */
+  candidate?: { kind: "decision" | "requirement"; title: string; body: string };
+  /** schedule — 마일스톤 기한 이동 */
+  schedule?: { from: string; to: string; impact: string };
+  /** dev_release — 운영 배포 */
+  release?: { env: string; version: string; rollback: string };
   message: string;
 }
 

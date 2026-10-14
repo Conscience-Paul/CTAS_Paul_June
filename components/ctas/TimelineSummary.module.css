@@ -1,0 +1,117 @@
+/* 세로 시간축 — 왼쪽 시각 · 점(축 위) · 내용. 위 = 다가오는 일, 아래 = 지난 일 */
+.axis {
+  position: relative;
+  margin: 0;
+  padding: var(--space-2) 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+
+/* 축 선 — 시각 칸 오른쪽, 점 가운데를 지난다 */
+.axis::before {
+  content: "";
+  position: absolute;
+  top: var(--space-3);
+  bottom: var(--space-3);
+  left: calc(var(--space-4) + 88px + var(--space-3) + var(--space-3)); /* lint-hardcoded: ignore */
+  width: 1px;
+  background: var(--border);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 88px var(--space-6) minmax(0, 1fr); /* lint-hardcoded: ignore */
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  color: inherit;
+  text-decoration: none;
+}
+
+.row:hover {
+  background: var(--hover);
+}
+
+.when {
+  padding-top: var(--space-0);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--lh-sm);
+  color: var(--fg-subtle);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.item[data-side="ahead"] .when {
+  color: var(--primary);
+}
+
+.dot {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  width: var(--space-5);
+  height: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--bg);
+  color: var(--fg-muted);
+}
+
+.item[data-side="ahead"] .dot {
+  width: var(--space-3);
+  height: var(--space-3);
+  margin-top: var(--space-1);
+  border-color: var(--primary);
+  background: var(--primary-subtle);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0);
+  min-width: 0;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+  color: var(--fg-strong);
+}
+
+.sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-xs);
+  color: var(--fg-subtle);
+}
+
+/* 지금 — 미래와 과거를 가르는 선 */
+.now {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr); /* lint-hardcoded: ignore */
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-4);
+}
+
+.now .when {
+  color: var(--primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.nowLine {
+  height: 2px; /* lint-hardcoded: ignore */
+  background: var(--primary);
+  border-radius: var(--radius-full);
+}

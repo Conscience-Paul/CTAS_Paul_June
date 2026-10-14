@@ -59,7 +59,8 @@ export default function KnowledgeLibraryPage() {
     if (e.type === "run") return { v: e.item.attempt, draft: e.item.state === "submitted", at: e.item.startedAt, author: { kind: "ai", model: "Nora" } };
     const vs = [...(findDocLike(e.id)?.versions ?? []), ...(extraVersions[e.id] ?? [])];
     const d = drafts[e.id];
-    if (d) return { v: vs.length + 1, draft: true, at: d.at, author: d.author };
+    // draft 는 번호가 없다 — 확정된 마지막 버전 번호 + draft 배지로 표시
+    if (d) return { v: vs.length, draft: true, at: d.at, author: d.author };
     const last = vs[vs.length - 1];
     return { v: vs.length, draft: false, at: last?.at ?? "", author: last?.author ?? { kind: "ai", model: "Nora" } };
   };

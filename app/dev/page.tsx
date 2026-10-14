@@ -33,7 +33,7 @@ export default function DevListPage() {
   const base = all.filter((t) => (!projectFilter || t.projectId === projectFilter) && (who === "all" || t.ownerId === "m-seoyeon" || t.ownerId === "m-junho"));
   const scopeOf = (t: Task): Scope => (!OPEN(t) ? "done" : t.state === "blocked" ? "blocked" : t.state === "pending_review" ? "review" : "open");
   const listed = base.filter((t) => (scope.length === 0 || scope.includes(scopeOf(t))) && (kind.length === 0 || kind.includes(t.kind)));
-  const myPending = approvals.filter((a) => (!projectFilter || a.projectId === projectFilter) && a.kind === "result" && (approvalDecisions[a.id] ?? a.state) === "pending");
+  const myPending = approvals.filter((a) => (!projectFilter || a.projectId === projectFilter) && a.kind === "dev_result" && (approvalDecisions[a.id] ?? a.state) === "pending");
 
   const groups = taskGroups.map((g) => ({ ...g, taskIds: g.taskIds.filter((id) => listed.some((t) => t.id === id)) })).filter((g) => g.taskIds.length > 0);
   const grouped = new Set(groups.flatMap((g) => g.taskIds));
