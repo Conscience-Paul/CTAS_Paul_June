@@ -82,9 +82,9 @@ export const tasks: Task[] = [
     ],
     contextIds: ["ctx-req-spec", "ctx-doc-sap-spec"],
     timeline: [
-      { at: "2026-08-10", who: "김서연", text: "업무 생성 (WBS 3.2)" },
-      { at: "2026-09-30", who: "이준호", text: "PR #128 제출" },
-      { at: "2026-10-08", who: "한빛 IT팀", text: "검증 완료" },
+      { at: "2026-08-10T10:00:00", who: "김서연", text: "업무 생성 (WBS 3.2)", kind: "create" },
+      { at: "2026-09-30T16:40:00", who: "이준호", text: "PR #128 제출", kind: "pr" },
+      { at: "2026-10-08T14:20:00", who: "한빛 IT팀", text: "검증 완료", kind: "verify" },
     ],
   },
   {
@@ -108,9 +108,9 @@ export const tasks: Task[] = [
     ],
     contextIds: ["ctx-req-spec", "ctx-our-approval-design"],
     timeline: [
-      { at: "2026-09-28", who: "김서연", text: "업무 생성" },
-      { at: "2026-10-05", who: "박민지", text: "착수" },
-      { at: "2026-10-12", who: "시스템", text: "요청 rq-2 합류 (군집 판정: 동일 화면)" },
+      { at: "2026-09-28T09:30:00", who: "김서연", text: "업무 생성", kind: "create" },
+      { at: "2026-10-05T09:10:00", who: "박민지", text: "착수", kind: "start" },
+      { at: "2026-10-12T10:15:00", who: "시스템", text: "요청 rq-2 합류 (군집 판정: 동일 화면)", kind: "merge" },
     ],
   },
   {
@@ -134,10 +134,10 @@ export const tasks: Task[] = [
     ],
     contextIds: ["ctx-req-spec", "ctx-dec-approval-threshold", "ctx-our-approval-design"],
     timeline: [
-      { at: "2026-09-28", who: "김서연", text: "업무 생성" },
-      { at: "2026-10-03", who: "Nora", text: "AgentRun #1 — 설계안 기반 구현 제출" },
-      { at: "2026-10-07", who: "이준호", text: "반려: 대리 승인 시 원 승인자 알림 누락" },
-      { at: "2026-10-11", who: "Nora", text: "AgentRun #2 제출 — 결과 승인 대기" },
+      { at: "2026-09-28T09:40:00", who: "김서연", text: "업무 생성", kind: "create" },
+      { at: "2026-10-03T11:20:00", who: "Nora", text: "AgentRun #1 — 설계안 기반 구현 제출", kind: "submit" },
+      { at: "2026-10-07T15:10:00", who: "이준호", text: "반려: 대리 승인 시 원 승인자 알림 누락", kind: "reject" },
+      { at: "2026-10-11T15:20:00", who: "Nora", text: "AgentRun #2 제출 — 결과 승인 대기", kind: "submit" },
     ],
   },
   {
@@ -162,9 +162,9 @@ export const tasks: Task[] = [
     ],
     contextIds: ["ctx-req-payment", "ctx-conv-payment-q", "ctx-dec-payment-defer"],
     timeline: [
-      { at: "2026-10-06", who: "김서연", text: "질문 리스트 Slack 발송" },
-      { at: "2026-10-10", who: "시스템", text: "Pre-flight 실패 → blocked (고객 응답 대기)" },
-      { at: "2026-10-13", who: "시스템", text: "리스크 R-NORESP 발생 (7일 미응답)" },
+      { at: "2026-10-06T10:12:00", who: "김서연", text: "질문 리스트 Slack 발송", kind: "comm" },
+      { at: "2026-10-10T09:00:00", who: "시스템", text: "Pre-flight 실패 → blocked (고객 응답 대기)", kind: "blocked" },
+      { at: "2026-10-13T09:00:00", who: "시스템", text: "리스크 R-NORESP 발생 (7일 미응답)", kind: "risk" },
     ],
   },
   {
@@ -188,8 +188,8 @@ export const tasks: Task[] = [
     ],
     contextIds: ["ctx-meet-1009", "ctx-conv-review-criteria"],
     timeline: [
-      { at: "2026-10-09", who: "김서연", text: "업무 생성" },
-      { at: "2026-10-11", who: "시스템", text: "카카오톡 메시지 연결 — 전달 10/14로 연기" },
+      { at: "2026-10-09T11:20:00", who: "김서연", text: "업무 생성", kind: "create" },
+      { at: "2026-10-11T18:06:00", who: "시스템", text: "카카오톡 메시지 연결 — 전달 10/14로 연기", kind: "delay" },
     ],
   },
   {
@@ -211,8 +211,8 @@ export const tasks: Task[] = [
     ],
     contextIds: ["ctx-conv-filter-request"],
     timeline: [
-      { at: "2026-10-10", who: "시스템", text: "요청 rq-1 → 신규 업무 생성" },
-      { at: "2026-10-10", who: "김서연", text: "분류: change_request, 담당 박민지" },
+      { at: "2026-10-10T09:35:00", who: "시스템", text: "요청 rq-1 → 신규 업무 생성", kind: "create" },
+      { at: "2026-10-10T10:20:00", who: "김서연", text: "분류: change_request, 담당 박민지", kind: "triage" },
     ],
   },
   {
@@ -233,7 +233,7 @@ export const tasks: Task[] = [
       warn("pf2", "정책 확인", "Slack 알림에 수량 포함 불가(§5.1) — 설계 반영 필요", "ctx-doc-security-policy"),
     ],
     contextIds: ["ctx-req-spec"],
-    timeline: [{ at: "2026-10-12", who: "김서연", text: "WBS 4.1에서 생성" }],
+    timeline: [{ at: "2026-10-12T13:00:00", who: "김서연", text: "WBS 4.1에서 생성", kind: "create" }],
   },
   {
     id: "t-stock-alert-dup",
@@ -250,7 +250,7 @@ export const tasks: Task[] = [
     description: "안전 재고 미달 메일 알림.",
     preflight: [warn("pf1", "중복 가능성", "t-stock-alert 와 dedupKey 동일")],
     contextIds: ["ctx-req-spec"],
-    timeline: [{ at: "2026-10-12", who: "박민지", text: "고객 피드백 항목 2에서 생성" }],
+    timeline: [{ at: "2026-10-12T14:10:00", who: "박민지", text: "고객 피드백 항목 2에서 생성", kind: "create" }],
   },
   {
     id: "t-sejong-login",
@@ -273,8 +273,8 @@ export const tasks: Task[] = [
     ],
     contextIds: ["ctx-sj-login-report"],
     timeline: [
-      { at: "2026-10-12", who: "시스템", text: "요청 rq-5 → 신규 업무 (SLA 타이머 시작)" },
-      { at: "2026-10-12", who: "이준호", text: "원인 추정: 세션 쿠키 SameSite 변경" },
+      { at: "2026-10-12T09:05:00", who: "시스템", text: "요청 rq-5 → 신규 업무 (SLA 타이머 시작)", kind: "incident" },
+      { at: "2026-10-12T11:30:00", who: "이준호", text: "원인 추정: 세션 쿠키 SameSite 변경", kind: "analysis" },
     ],
   },
 ];

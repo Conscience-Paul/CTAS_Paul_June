@@ -92,7 +92,7 @@ export default function ContextPage() {
         lead="이 프로젝트에 대해 아는 모든 것. 원본·전처리·검색은 Nora, 버전과 추적 링크는 CTAS가 가집니다."
         actions={
           <Button size="sm" variant="outline" leftIcon={<Icon name="line-segments" />} asChild>
-            <Link href={`/projects/${id}/context/graph`}>추적 그래프</Link>
+            <Link href="/ops/milestones">추적 타임라인</Link>
           </Button>
         }
       />

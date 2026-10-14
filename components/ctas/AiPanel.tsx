@@ -149,7 +149,7 @@ export function AiPanel({ embedded = false }: { embedded?: boolean }) {
   const pathname = usePathname() ?? "/";
   const router = useRouter();
   const { toast } = useToast();
-  const { setAiOpen, registerAskHandler, registerMentionHandler, addVersion, decideApproval } = usePreview();
+  const { setAiOpen, registerAskHandler, registerMentionHandler, extraVersions, saveDraft, decideApproval } = usePreview();
   const scenario = scenarioFor(pathname);
 
   // 스레드는 라우트(=컨텍스트 범위)마다 새로 시작 — AppShell 이 key={pathname} 으로 리마운트한다
@@ -205,19 +205,20 @@ export function AiPanel({ embedded = false }: { embedded?: boolean }) {
     const [kind, id] = action.effect.split(":");
     if (kind === "version") {
       // 컨텍스트 항목·계약 문서 공용. payload 가 있으면 그 본문으로, 없으면 요구사항 v4 기본 시나리오.
-      const base = (resolveDoc(id)?.versions ?? []).length;
+      // Nora 의 제안도 사람 수정과 같이 draft 로만 — 승인해야 확정·Drive 배포.
+      const base = (resolveDoc(id)?.versions ?? []).length + (extraVersions[id]?.length ?? 0);
       const payload = action.payload ?? {
         summary: "AI 제안 적용 — R-03 동기화 주기 5분, BASIS 확인 조건부 (충돌 cf-3 supersede)",
         body: "# 요구사항 정의서 v" + (base + 1) + "\n\n## R-03 SAP 연동\n재고 수량 양방향 동기화. 주기 **5분** (PR #142). 단, SAP 명세서의 RFC 호출량 제한에 따라 **한빛 BASIS 팀 확인을 조건**으로 함.\n\n(그 외 항목은 v" + base + " 과 동일)",
       };
-      const n = addVersion(id, {
+      saveDraft(id, {
         at: new Date().toISOString(),
         author: { kind: "ai", model: "Nora · claude-opus" },
         summary: payload.summary,
         basedOn: (turns.findLast?.((t) => t.role === "ai")?.sources ?? []).map((s) => s.id),
         body: payload.body,
       });
-      toast({ title: `v${base + n} 생성됨`, description: "버전 히스토리에서 확인하세요.", tone: "success" });
+      toast({ title: `v${base + 1} draft 생성됨`, description: "문서에서 이전 버전과 비교하고 승인하면 Google Drive 에 배포됩니다.", tone: "success" });
     } else if (kind === "approve") {
       decideApproval(id, "approved");
       toast({ title: "승인됨", description: "승인 큐에서 제거됐습니다.", tone: "success" });

@@ -1,13 +1,14 @@
 "use client";
 
 /**
- * 운영 › 계약·문서 › 문서함 — Finder / Google Drive 식 탐색.
+ * 지식 › 계약문서 — 관리자 전용 보안 문서함. Finder / Google Drive 식 탐색.
  * 한 리스트에 현재 폴더의 하위 폴더(위) + 문서(아래). 폴더 행을 누르면 들어가고,
- * 상단 경로로 되돌아온다. 문서 행 클릭 → Drawer. 원본(Google Drive)은 행 끝 아이콘.
+ * 상단 경로로 되돌아온다. 문서 행(또는 사이드바 트리의 파일) 클릭 → 본문에 문서 뷰어.
+ * 원본(Google Drive)은 행 끝 아이콘.
  */
 
 import { useState } from "react";
-import { Badge, Button, Chip, EmptyState, FileIcon, FilterButton, Icon, IconButton, Input, TableHeader, TableRow, Tooltip } from "@/components/ctas/ctds";
+import { Badge, Button, Callout, EmptyState, FileIcon, FilterButton, Icon, IconButton, Input, TableHeader, TableRow, Tooltip } from "@/components/ctas/ctds";
 import { Page, PageHeader, Panel, Row, Subtle, TableBox } from "@/components/ctas/ui";
 import {
   CONTRACT_LABEL,
@@ -48,22 +49,38 @@ const DELIVERIES: DeliveryStatus[] = ["not_sent", "scheduled", "sent", "acknowle
 type Entry = { type: "folder"; folder: DocFolder } | { type: "doc"; doc: ContractDoc };
 
 export default function ContractsLibraryPage() {
-  const { role, mentionDoc } = usePreview();
-  const canView = role === "pm" || role === "admin";
-  const canOpen = (c: ContractDoc) => role === "admin" || (role === "pm" && c.requiredRole === "pm");
+  // 현재 폴더·열린 문서는 사이드바 트리와 공유
+  const { role, mentionDoc, contractFolderId: folderId, setContractFolderId, openDocId, setOpenDocId } = usePreview();
+  const canView = role === "admin";
 
-  const [folderId, setFolderId] = useState<string | null>(null);
+  const setFolderId = (id: string | null) => { setContractFolderId(id); setOpenDocId(null); };
   const [statusFilter, setStatusFilter] = useState<ContractStatus | null>(null);
   const [deliveryFilter, setDeliveryFilter] = useState<DeliveryStatus | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
   const [deliveryOverride, setDeliveryOverride] = useState<Record<string, DeliveryStatus>>({});
   const deliveryOf = (c: ContractDoc) => deliveryOverride[c.id] ?? c.delivery.status;
 
   if (!canView) {
     return (
       <Page>
-        <PageHeader title="문서함" />
-        <EmptyState icon="eye-slash" title="열람 권한이 없습니다" description="계약·견적·NDA 는 PM 이상만 볼 수 있습니다. 상단 '역할로 보기'를 PM 또는 관리자로 바꿔 보세요." />
+        <PageHeader title="계약문서" />
+        <EmptyState icon="eye-slash" title="관리자 전용 보안 문서함입니다" description="계약서 · 견적서 · NDA · SLA 는 관리자만 열람할 수 있습니다. 상단 '역할로 보기'를 관리자로 바꿔 보세요." />
+      </Page>
+    );
+  }
+
+  const openDoc = openDocId ? contracts.find((c) => c.id === openDocId) : undefined;
+  if (openDoc) {
+    return (
+      <Page wide>
+        <DocDrawer
+          key={openDoc.id}
+          doc={openDoc}
+          inline
+          delivery={deliveryOf(openDoc)}
+          onDelivery={(s) => setDeliveryOverride((m) => ({ ...m, [openDoc.id]: s }))}
+          onClose={() => setOpenDocId(null)}
+          onAskAi={() => mentionDoc(openDoc.id)}
+        />
       </Page>
     );
   }
@@ -75,22 +92,25 @@ export default function ContractsLibraryPage() {
   const scope = docsInFolder(folderId); // 하위 포함 — 필터 건수용
   const count = (pred: (c: ContractDoc) => boolean) => scope.filter(pred).length;
   const entries: Entry[] = [...subfolders.map((f) => ({ type: "folder", folder: f }) as Entry), ...docs.map((d) => ({ type: "doc", doc: d }) as Entry)];
-  const openDoc = openId ? contracts.find((c) => c.id === openId) : undefined;
   const goUp = () => setFolderId(path.length >= 2 ? path[path.length - 2].id : null);
 
   return (
     <Page wide>
       <PageHeader
-        title="문서함"
+        title="계약문서"
         lead="계약서 · 견적서 · NDA · SLA · 변경 계약. 원본은 Google Drive 에, 정제본과 버전·전달 이력은 여기에."
         actions={<Button size="sm" variant="primary" leftIcon={<Icon name="upload-simple" />}>문서 등록</Button>}
       />
+
+      <Callout tone="warning" variant="outline" icon="eye-slash" title="보안 문서함 — 관리자 전용">
+        금액·조항이 포함된 문서입니다. 관리자 외 역할은 열람할 수 없으며, 열람·편집·발송은 모두 기록됩니다.
+      </Callout>
 
       {/* 경로 — Finder 식 */}
       <Row style={{ justifyContent: "space-between" }}>
         <div className={styles.nav}>
           <IconButton size="sm" variant="ghost" icon={<Icon name="caret-left" />} aria-label="상위 폴더" disabled={!folderId} onClick={goUp} />
-          <Button size="sm" variant={folderId ? "ghost" : "secondary"} leftIcon={<Icon name="stack" />} onClick={() => setFolderId(null)}>문서함</Button>
+          <Button size="sm" variant={folderId ? "ghost" : "secondary"} leftIcon={<Icon name="stack" />} onClick={() => setFolderId(null)}>계약문서</Button>
           {path.map((f, i) => (
             <span key={f.id} className={styles.nav}>
               <span className={styles.navSep}><Icon name="caret-right" size={12} /></span>
@@ -136,26 +156,15 @@ export default function ContractsLibraryPage() {
                 key={e.doc.id}
                 variant="line"
                 data={e}
-                disabled={!canOpen(e.doc)}
-                onClick={() => canOpen(e.doc) && setOpenId(e.doc.id)}
-                draggable={canOpen(e.doc)}
+                onClick={() => setOpenDocId(e.doc.id)}
+                draggable
                 onDragStart={(ev: React.DragEvent) => { startDocDrag(e.doc.id); ev.dataTransfer.setData(DOC_MIME, e.doc.id); ev.dataTransfer.setData("text/plain", e.doc.title); ev.dataTransfer.effectAllowed = "copyLink"; }}
                 onDragEnd={() => endDocDrag()}
-                columns={columns.map((col) => ({ ...col, render: () => docCell(col.key, e.doc, deliveryOf(e.doc), !canOpen(e.doc)) }))}
+                columns={columns.map((col) => ({ ...col, render: () => docCell(col.key, e.doc, deliveryOf(e.doc)) }))}
               />
             ),
           )}
         </TableBox>
-      )}
-
-      {openDoc && (
-        <DocDrawer
-          doc={openDoc}
-          delivery={deliveryOf(openDoc)}
-          onDelivery={(s) => setDeliveryOverride((m) => ({ ...m, [openDoc.id]: s }))}
-          onClose={() => setOpenId(null)}
-          onAskAi={() => { setOpenId(null); mentionDoc(openDoc.id); }}
-        />
       )}
     </Page>
   );
@@ -186,15 +195,13 @@ function nextEvent(c: ContractDoc, delivery: DeliveryStatus): { label: string; a
   return cands.filter((x) => daysUntil(x.at) >= -14).sort((a, b) => a.at.localeCompare(b.at))[0] ?? null;
 }
 
-function docCell(key: string, c: ContractDoc, delivery: DeliveryStatus, locked: boolean) {
+function docCell(key: string, c: ContractDoc, delivery: DeliveryStatus) {
   switch (key) {
     case "doc":
       return (
         <Row tight style={{ flexWrap: "nowrap", minWidth: 0 }}>
           <FileIcon ext={c.ext} size="sm" />
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</span>
-          {locked && <Chip size="sm" variant="outline" leftIcon={<Icon name="eye-slash" size={10} />}>관리자</Chip>}
-        </Row>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</span>        </Row>
       );
     case "kind": return <Badge size="sm" variant="soft">{CONTRACT_LABEL[c.kind]}</Badge>;
     case "status": return <Badge size="sm" variant="soft" status={STATUS_TONE[c.status]}>{CONTRACT_STATUS_LABEL[c.status]}</Badge>;

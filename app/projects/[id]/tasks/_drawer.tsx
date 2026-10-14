@@ -97,7 +97,7 @@ export function TaskDrawer({ task, group, onClose }: { task: Task; group?: TaskG
               <Stack>
                 {task.timeline.map((e, i) => (
                   <Row key={i} tight style={{ flexWrap: "nowrap", alignItems: "flex-start" }}>
-                    <Subtle style={{ flexShrink: 0, fontFamily: "var(--font-mono)" }}>{e.at}</Subtle>
+                    <Subtle style={{ flexShrink: 0, fontFamily: "var(--font-mono)" }}>{fmtDateTime(e.at)}</Subtle>
                     <Avatar size="xs" name={e.who} />
                     <span>{e.text}</span>
                   </Row>

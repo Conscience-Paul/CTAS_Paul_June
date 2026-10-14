@@ -201,7 +201,7 @@ export default function DevPage() {
                   variant="activity"
                   leading={<TaskStateBadge state={t.state} />}
                   body={<Row tight><Strong>{t.title}</Strong><Subtle>{getProject(t.projectId)?.name}</Subtle></Row>}
-                  meta={t.timeline[t.timeline.length - 1]?.at}
+                  meta={t.timeline.length ? fmtDateTime(t.timeline[t.timeline.length - 1].at) : undefined}
                 />
               ))}
             </List>

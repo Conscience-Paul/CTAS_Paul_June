@@ -123,6 +123,27 @@ CTAS는 **프로젝트 컨텍스트**를 중심에 두고, 그 위에 **운영(�
 
 **AI 챗뷰(공통 패널)**: 모든 화면 우측에 접었다 펼 수 있는 패널. Cursor처럼 현재 보고 있는 항목이 컨텍스트로 잡힌다. 프리뷰에서는 목 시나리오를 재생한다.
 
+#### 2.1.1 문서 버전 · draft · 배포 (CTAS = 원본 저장소, Google Drive = 배포 대상)
+
+```
+수집   Google Drive·Docs · 카카오톡 · Discord · …  → CTAS 에 항상 저장·갱신 (자동)
+생성   Nora 가 CTAS 를 근거로 정의된 문서 생성/수정
+draft  사람·Nora 의 수정은 전부 draft 로 — 승인 전엔 Drive 미반영
+배포   사람 승인 → 다음 버전으로 확정 + Google Drive 에 씀 (수동)
+```
+
+| 규칙 | 내용 |
+|---|---|
+| draft 는 문서당 하나 | 다시 고치면 같은 draft 를 덮어쓴다. 표시: `v22 · draft`, 문서 상단 "업데이트 있음" 배너 |
+| 승인 | 누구나 승인 가능. 단 보안 문서(계약문서)는 관리자만. 승인 → `v22 · 배포됨` |
+| 배포 대상 | Google Drive(문서)만. 카카오·Discord 등은 읽기 전용 소스 |
+| 원본이 Drive 에 있으면 | 승인 시 그 파일을 새 버전으로 덮어쓴다 |
+| 원본이 없는 새 문서 | 승인 시 지식 폴더 구조 그대로 Drive 에 새 파일 생성 (`CTAS › 고객사 › 프로젝트 › 종류 › 제목`) |
+| Drive 원본을 사람이 직접 수정 | 수집되어 새 확정 버전으로 들어온다. 기존 draft 는 그대로 유지 |
+| 폐기 | draft 를 버리면 확정 버전은 그대로 |
+| 배포 실패 | 당분간 고려하지 않음 |
+| 버전 비교 | 버전 탭 = 좌: 버전 목록(draft 맨 위), 우: 선택 버전 vs 이전 버전 스플릿 diff (Cursor 식 — 삭제 빨강, 추가 초록, 줄 번호) |
+
 ### 2.2 운영 프로세스
 
 **화면**: `/projects/[id]` (개요), `/projects/[id]/operations`
@@ -250,13 +271,13 @@ Rail            Panel (검색 + 메뉴)
 
 ◎ 운영          프로젝트 /projects · 마일스톤 /ops/milestones (타임라인·캘린더·테이블,
  (매니저)        프로젝트/담당자 그룹, 필터) · 리소스 /ops/resources (팀원 투입률·부하) · 인사이트 /ops/insights
-                · 계약·문서 /ops/contracts (PM 이상) — 선택 시 하위 메뉴: 문서함 · 일정 (AI 는 문서함 우상단 아이콘으로 사이드 패널)
                 ※ 단계·리스크·프로젝트 설정은 프로젝트 상세 안에서 — 운영 패널엔 현재 프로젝트 섹션 없음
 
-▤ 지식          문서함 /knowledge (계약·문서와 같은 Finder 식: 고객사 › 프로젝트 › 회의록·요구사항·
+▤ 지식          문서함 /knowledge (Finder 식: 고객사 › 프로젝트 › 회의록·요구사항·
  (문서 집합소)   의사결정·고객 문서·우리 문서·대화·변경·산출물 + 루트의 패턴 라이브러리·템플릿)
                 (인사이트는 운영으로 이동)
                 [현재 프로젝트 ▾] 추적 그래프
+                보안 · 관리자 전용 — 계약문서 /knowledge/contracts (메뉴는 모두에게 보이고, 열람은 관리자만)
                 AI 는 탑바 패널 — 문서 행을 끌어다 놓으면 멘션
 
 </> 개발        유지보수·개발 /dev  (orbit Operate 허브: 유지보수·에이전트·배포·종결·리포트)
@@ -281,10 +302,9 @@ Topbar: 현재 경로 `Breadcrumb`, 역할 전환 스위치(프리뷰 전용), A
 | `/todo` | 투두: 승인·차단 해제·내 업무·리스크 확인·내 마일스톤 (체크는 로컬) | Checkbox, List |
 | `/ops/milestones` | 전 프로젝트 마일스톤 — 타임라인(오늘선, 주 눈금, 프로젝트/담당자 그룹) · 캘린더(월 이동, EventChip) · 테이블. 프로젝트·담당·상태 필터 | Tabs(segmented), EventChip, TableRow |
 | `/ops/resources` | 팀원 × 프로젝트 투입률(100% 기준선, 과투입 경고) + 부하 매트릭스(열린 업무·차단·마일스톤) | MetricCard, Callout |
-| `/ops/contracts` | 계약·문서 › **문서함** — Finder/Drive 식 탐색: 한 리스트에 하위 폴더(위) + 문서(아래), 폴더 행 클릭으로 진입, 상단 경로(문서함 › 고객사 › 프로젝트)와 ← 로 복귀. 리스트 컬럼(문서·종류·상태·전달·상대방·금액·다음 일정·버전·원본 아이콘). 상태/전달 FilterButton 이 지표 역할. 행 클릭 → Drawer(내용 보기/편집 → v+1 · 버전 히스토리 · 전달 상태·이력·발송 예약/고객 발송). 역할 가드 | TableRow, Drawer, FileIcon, VersionRail, Textarea |
-| (문서함 우상단 💬) | 우측 AI 사이드 패널. 문서 행을 **드래그앤드롭**하면 패널에 멘션(첨부 칩)되고 AI 가 그 문서를 보고 답한다. Drawer 의 "AI 로 보완"도 같은 멘션. 제안 적용 시 해당 문서에 v+1 | AiPanel, ChatInput attachments |
-| `/ops/contracts/schedule` | 계약·문서 › **일정** — 발송 예정·검토 기한·만료·갱신 협의(만료 45일 전 자동). 기간·종류 필터, 항목 클릭 → Drawer | Badge, FilterButton |
-| `/knowledge` | 지식 문서함 — Finder 식 폴더 + 리스트(이름·종류·상태·출처·최근 작성·수정·원본 아이콘). 처음엔 현재 프로젝트 폴더에서 시작. 행 클릭 → Drawer(내용 보기/편집 → v+1 · 버전 · 연결: 추적 링크·연결 업무). 드래그 → AI 패널 멘션 | TableRow, Drawer, VersionRail |
+| `/knowledge/contracts` | 지식 › **계약문서** (보안 · 관리자 전용) — 상단 보안 안내 Callout. Finder/Drive 식 탐색: 한 리스트에 하위 폴더(위) + 문서(아래), 폴더 행 클릭으로 진입, 상단 경로(계약문서 › 고객사 › 프로젝트)와 ← 로 복귀. 리스트 컬럼(문서·종류·상태·전달·상대방·금액·다음 일정·버전·원본 아이콘). 상태/전달 FilterButton 이 지표 역할. 행 클릭 → Drawer(내용 보기/편집 → v+1 · 버전 히스토리 · 전달 상태·이력·발송 예약/고객 발송). 메뉴는 모든 역할에 보이고, 관리자 외 역할이 들어오면 잠금 화면 | TableRow, Drawer, FileIcon, VersionRail, Textarea, Callout |
+| (계약문서 우상단 💬) | 우측 AI 사이드 패널. 문서 행을 **드래그앤드롭**하면 패널에 멘션(첨부 칩)되고 AI 가 그 문서를 보고 답한다. Drawer 의 "AI 로 보완"도 같은 멘션. 제안 적용 시 해당 문서에 v+1 | AiPanel, ChatInput attachments |
+| `/knowledge` | 지식 문서함 — Finder 식 폴더 + 리스트(이름·종류·상태·출처·최근 작성·수정·원본 아이콘). 상태 = 버전 상태(`v3 · 배포됨` / `v4 · draft`), 수정 = 날짜, 필터 전체/draft/배포됨. 종류는 컨텍스트만 있는 폴더(회의록 등)에선 숨김. 실행 결과는 제출됨(draft)·승인됨(배포됨)만 노출. AI 작성자는 "Nora". 처음엔 현재 프로젝트 폴더에서 시작. 행 클릭 → Drawer(내용 보기/편집 → v+1 · 버전 · 연결: 추적 링크·연결 업무). 드래그 → AI 패널 멘션 | TableRow, Drawer, VersionRail |
 | `/dev` | orbit Operate 허브: 미해결/치명·차단/검토 대기/고객 접수 지표, 탭 유지보수·에이전트·배포·종결·리포트 | Tabs, TableRow, MetricCard |
 | `/projects` | 프로젝트 목록(고객사별 그룹, 단계·리스크 수·담당 PM) | TableRow, Chip, Avatar |
 | `/projects/[id]` | 운영 개요: 단계 Stepper, 마일스톤, 담당자, 진행 지표, 리스크 요약 | Stepper, MetricCard, EventChip |

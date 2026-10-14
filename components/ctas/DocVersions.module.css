@@ -1,0 +1,118 @@
+/* 넓으면 [버전 목록 | 메타·본문] 나란히, 좁으면(Drawer) 위아래로 */
+.split {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-5);
+  padding-top: var(--space-4);
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 0 1 260px; /* lint-hardcoded: ignore */
+  min-width: 200px; /* lint-hardcoded: ignore */
+}
+
+/* 배포 위치 링크 — "Google Docs ↗" */
+.deployLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.deployLink:hover {
+  color: var(--primary);
+}
+
+.railHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  line-height: var(--lh-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--fg-muted);
+}
+
+.railHint {
+  display: inline-flex;
+  color: var(--fg-subtle);
+  cursor: help;
+}
+
+.railToggle {
+  margin-left: auto;
+}
+
+/* 간단히 보기 — 번호만 좁게 */
+.rail[data-collapsed] {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.rail[data-collapsed] .railHead {
+  padding: 0;
+  justify-content: center;
+}
+
+.railMini {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.miniItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-0);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--lh-xs);
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+
+.miniItem:hover {
+  background: var(--hover);
+}
+
+.miniItem[data-active] {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+  color: var(--primary);
+  box-shadow: inset 2px 0 0 var(--primary); /* lint-hardcoded: ignore */
+}
+
+.miniDraft {
+  font-family: var(--font-sans, inherit);
+  font-size: var(--text-2xs);
+  color: var(--warning);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  flex: 1 1 480px; /* lint-hardcoded: ignore */
+  min-width: 0;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}

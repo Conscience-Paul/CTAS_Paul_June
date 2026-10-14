@@ -66,6 +66,22 @@
   white-space: nowrap;
 }
 
+/* 목록의 원본 칸 — 출처 이름이 곧 원본 링크 */
+.sourceLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  max-width: 100%;
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+  text-decoration: none;
+}
+
+.sourceLink:hover {
+  color: var(--primary);
+}
+
 /* Drawer */
 .drawerBody {
   display: flex;

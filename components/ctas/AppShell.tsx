@@ -27,7 +27,6 @@ import {
   type IconName,
 } from "@/components/ctas/ctds";
 import {
-  LABEL,
   approvals,
   byProject,
   getContext,
@@ -39,6 +38,8 @@ import {
 } from "@/lib/mock";
 import { usePreview } from "@/lib/preview-state";
 import { AiPanel } from "./AiPanel";
+import { DocPeek } from "./DocPeek";
+import { DocTree } from "./DocTree";
 import styles from "./AppShell.module.css";
 
 type Area = "dashboard" | "ops" | "knowledge" | "dev" | "settings";
@@ -98,7 +99,7 @@ function Crumbs() {
       if (seg[2] && projectSub[seg[2]]) crumbs.push({ label: projectSub[seg[2]], href: `/projects/${p.id}/${seg[2]}` });
       if (seg[3]) {
         const leaf =
-          getContext(seg[3])?.title ?? getTask(seg[3])?.title ?? getDeliverable(seg[3])?.title ?? (seg[3] === "graph" ? "추적 타임라인" : seg[3]);
+          getContext(seg[3])?.title ?? getTask(seg[3])?.title ?? getDeliverable(seg[3])?.title ?? seg[3];
         crumbs.push({ label: leaf });
       }
     } else {
@@ -110,13 +111,11 @@ function Crumbs() {
     crumbs.push({ label: "대시보드", href: "/" }, { label: "투두" });
   } else if (seg[0] === "ops") {
     crumbs.push({ label: "운영", href: "/projects" });
-    const sub: Record<string, string> = { milestones: "마일스톤", contracts: "계약·문서", resources: "리소스", insights: "인사이트" };
+    const sub: Record<string, string> = { milestones: "타임라인", resources: "리소스", insights: "인사이트" };
     if (seg[1] && sub[seg[1]]) crumbs.push({ label: sub[seg[1]], href: `/ops/${seg[1]}` });
-    const contractsSub: Record<string, string> = { schedule: "일정" };
-    if (seg[1] === "contracts" && seg[2] && contractsSub[seg[2]]) crumbs.push({ label: contractsSub[seg[2]] });
   } else if (seg[0] === "knowledge") {
     crumbs.push({ label: "지식", href: "/knowledge" });
-    const sub: Record<string, string> = { patterns: "패턴 라이브러리", templates: "템플릿" };
+    const sub: Record<string, string> = { patterns: "패턴 라이브러리", templates: "템플릿", contracts: "계약문서" };
     if (seg[1] && sub[seg[1]]) crumbs.push({ label: sub[seg[1]], href: `/knowledge/${seg[1]}` });
     if (seg[2]) crumbs.push({ label: seg[2] === "promote" ? "패턴 승격" : getPattern(seg[2])?.title ?? seg[2] });
   } else if (seg[0] === "dev") {
@@ -147,13 +146,30 @@ function Crumbs() {
 }
 
 /* ── Sidebar (Rail + Panel) ────────────────────── */
+// 패널 폭 — 경계를 끌어 조절 (px)
+const PANEL_W = 260;
+const PANEL_MIN = 200;
+const PANEL_MAX = 480;
+
 function ShellSidebar() {
   const pathname = usePathname() ?? "/";
-  const { role, approvalDecisions, projectId, setProjectId, aiOpen, setAiOpen } = usePreview();
+  const { approvalDecisions, projectId, setProjectId, aiOpen, setAiOpen } = usePreview();
 
   // 라우트에서 유도한 영역을 기본으로, Rail 클릭으로 미리보기 전환 허용. 라우트가 바뀌면 재동기화.
   const routeArea = areaFor(pathname);
   const [area, setArea] = useState<Area>(routeArea);
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelW, setPanelW] = useState(PANEL_W);
+  const startResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const x0 = e.clientX;
+    const w0 = panelW;
+    const move = (ev: PointerEvent) => setPanelW(Math.min(PANEL_MAX, Math.max(PANEL_MIN, w0 + ev.clientX - x0)));
+    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); document.body.style.cursor = ""; };
+    document.body.style.cursor = "col-resize";
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
   const [seenPath, setSeenPath] = useState(pathname);
   if (seenPath !== pathname) {
     setSeenPath(pathname);
@@ -201,30 +217,18 @@ function ShellSidebar() {
       <>
         <Sidebar.Section>
           {item("/projects", "squares-four", "프로젝트")}
-          {item("/ops/milestones", "calendar-dots", "마일스톤")}
+          {item("/ops/milestones", "line-segments", "타임라인")}
           {item("/ops/resources", "user-circle", "리소스")}
           {item("/ops/insights", "chart-line", "인사이트")}
-          {item("/ops/contracts", "identification-card", "계약·문서")}
         </Sidebar.Section>
-        {under("/ops/contracts") && (
-          <>
-            <Sidebar.Separator />
-            <Sidebar.Section title="계약·문서">
-              {item("/ops/contracts", "stack", "문서함", { exact: true })}
-              {item("/ops/contracts/schedule", "calendar-blank", "일정")}
-            </Sidebar.Section>
-          </>
-        )}
       </>
     ),
-    // 지식 = 모든 문서의 집합소. 계약·문서와 같은 문서함 구조. AI 는 탑바 패널(드래그 멘션).
+    // 지식 = 모든 문서의 집합소. 패널 전체가 문서함 트리(에디터 탐색기). 계약문서는 보안 폴더 —
+    // 모두에게 보이지만 열람은 관리자만. AI 는 탑바 패널(드래그 멘션).
     knowledge: (
-      <>
-        <Sidebar.Section>
-          {item("/knowledge", "stack", "문서함", { exact: true })}
-          {item(`/projects/${pid}/context/graph`, "line-segments", "추적 타임라인")}
-        </Sidebar.Section>
-      </>
+      <Sidebar.Section>
+        <DocTree />
+      </Sidebar.Section>
     ),
     // 개발 = 전 프로젝트 허브. 프로젝트 선택은 허브 안의 필터로, 사이드바엔 두지 않는다.
     dev: (
@@ -269,7 +273,7 @@ function ShellSidebar() {
                   aria-label={a.label}
                   aria-selected={a.id === area}
                   role="tab"
-                  onClick={() => setArea(a.id)}
+                  onClick={() => { setArea(a.id); setPanelOpen(true); }}
                 />
               </Tooltip>
             </span>
@@ -289,19 +293,43 @@ function ShellSidebar() {
         </div>
       </div>
 
-      {/* Panel */}
-      <Sidebar>
-        <Sidebar.Header>
-          <div className={styles.panelHead}>
-            <div className={styles.panelTitle}>{areaMeta.label}</div>
-            <Input size="sm" leftIcon={<Icon name="search" />} placeholder="검색" aria-label={`${areaMeta.label} 검색`} />
-          </div>
-        </Sidebar.Header>
-        <Sidebar.Body>{panels[area]}</Sidebar.Body>
-        <Sidebar.Footer>
-          <Sidebar.Profile name="김서연" sub={`${LABEL.role[role]} · 프리뷰`} avatar={{ status: "online" }} />
-        </Sidebar.Footer>
-      </Sidebar>
+      {/* Panel — « 로 접으면 좁은 띠로 남고 같은 자리의 » 로 다시 펼친다. 프로필은 Rail 하단 아바타로 충분해 패널엔 두지 않음 */}
+      {!panelOpen && (
+        <div className={styles.panelCollapsed}>
+          <Tooltip content={`${areaMeta.label} 메뉴 펼치기`} side="right">
+            <IconButton size="sm" variant="ghost" icon={<Icon name="caret-double-right" />} aria-label="메뉴 펼치기" onClick={() => setPanelOpen(true)} />
+          </Tooltip>
+          <span className={styles.panelCollapsedTitle}>{areaMeta.label}</span>
+        </div>
+      )}
+      {panelOpen && (
+        <div className={styles.panelWrap} style={{ "--sidebar-w": `${panelW}px` } as React.CSSProperties}>
+        <Sidebar>
+          <Sidebar.Header>
+            <div className={styles.panelHead}>
+              <div className={styles.panelTitleRow}>
+                <div className={styles.panelTitle}>{areaMeta.label}</div>
+                <Tooltip content="메뉴 접기">
+                  <IconButton size="sm" variant="ghost" icon={<Icon name="caret-double-left" />} aria-label="메뉴 접기" onClick={() => setPanelOpen(false)} />
+                </Tooltip>
+              </div>
+              <Input size="sm" leftIcon={<Icon name="search" />} placeholder="검색" aria-label={`${areaMeta.label} 검색`} />
+            </div>
+          </Sidebar.Header>
+          <Sidebar.Body>{panels[area]}</Sidebar.Body>
+        </Sidebar>
+          {/* 오른쪽 경계를 끌어 폭 조절, 더블클릭하면 기본 폭으로 */}
+          <div
+            className={styles.resizer}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="메뉴 폭 조절"
+            aria-valuenow={panelW}
+            onPointerDown={startResize}
+            onDoubleClick={() => setPanelW(PANEL_W)}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -343,7 +371,7 @@ function ShellTopbar() {
 /* ── Shell ─────────────────────────────────────── */
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
-  const { aiOpen } = usePreview();
+  const { aiOpen, peekDocId } = usePreview();
 
   if (pathname.startsWith("/ctds")) return <>{children}</>;
 
@@ -358,6 +386,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <AppFrame.Content>
         <div className={styles.body}>
           <main className={styles.main}>{children}</main>
+          {/* 근거 문서 패널 — 문서의 근거 칩을 누르면 오른쪽에서 화면을 덮어 열린다 */}
+          {peekDocId && <DocPeek key={peekDocId} id={peekDocId} />}
           {aiOpen && (
             <aside className={styles.ai} aria-label="AI 패널">
               <AiPanel key={pathname} />

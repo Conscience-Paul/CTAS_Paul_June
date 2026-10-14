@@ -1,0 +1,151 @@
+.tree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  padding-left: calc(var(--depth, 0) * var(--space-3));
+  border-radius: var(--radius-sm);
+  color: var(--fg);
+}
+
+.row:hover {
+  background: var(--hover);
+}
+
+.row[data-active] {
+  background: var(--bg-subtle);
+  color: var(--fg-strong);
+  font-weight: var(--font-weight-medium);
+}
+
+.row[data-muted] {
+  color: var(--fg-subtle);
+}
+
+.caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--space-5);
+  height: var(--space-6);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fg-subtle);
+  cursor: pointer;
+}
+
+span.caret {
+  cursor: default;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2) var(--space-1) 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+/* 폴더 hover 시에만 드러나는 + (VS Code 탐색기 패턴). 메뉴가 열려 있으면 유지 */
+.actions {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding-right: var(--space-1);
+  opacity: 0;
+  transition: opacity var(--duration-fast, 120ms);
+}
+
+.row:hover .actions,
+.row:focus-within .actions,
+.actions:has([data-state="open"]) {
+  opacity: 1;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-5);
+  height: var(--space-5);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+
+.action:hover,
+.action[data-state="open"] {
+  background: var(--bg-subtle);
+  color: var(--fg-strong);
+}
+
+.badge {
+  flex-shrink: 0;
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+}
+
+.nameInput {
+  flex: 1;
+  min-width: 0;
+  height: var(--control-h-xs, var(--space-5));
+  padding: 0 var(--space-1);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--fg-strong);
+  font: inherit;
+  font-size: var(--text-sm);
+  outline: none;
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* knowledge-fs 의 folderMark 와 같은 모양, 트리용으로 작게 */
+.folder {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: var(--space-4);
+  height: var(--space-3);
+  margin-top: 2px; /* lint-hardcoded: ignore */
+  background: var(--primary-subtle);
+  border: 1px solid var(--primary-border-color);
+  border-radius: var(--radius-xs);
+}
+
+.folder::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: -3px; /* lint-hardcoded: ignore */
+  width: 45%;
+  height: 3px; /* lint-hardcoded: ignore */
+  background: var(--primary-subtle);
+  border: 1px solid var(--primary-border-color);
+  border-bottom: 0;
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+}

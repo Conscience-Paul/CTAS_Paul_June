@@ -92,7 +92,7 @@ export const hrefFor = (id: string, projectId?: string): string | undefined => {
   if (id.startsWith("del-") && pid) return `/projects/${pid}/deliverables/${id}`;
   if (id.startsWith("ms-") && pid) return `/projects/${pid}`;
   if (id.startsWith("cf-") && pid) return `/projects/${pid}/conflicts`;
-  if (id.startsWith("ct-")) return `/ops/contracts`;
+  if (id.startsWith("ct-")) return `/knowledge/contracts`;
   if (id.startsWith("ap-")) return `/approvals`;
   if (id.startsWith("run-")) {
     const r = getRun(id);
@@ -223,7 +223,8 @@ export const TONE = {
 };
 
 export const fmtDate = (iso: string) => {
-  const d = new Date(iso);
+  // "YYYY-MM-DD" 만 오면 new Date 가 UTC 로 해석해 시간대에 따라 하루 밀린다 → 로컬 자정으로
+  const d = new Date(iso.length <= 10 ? `${iso}T00:00:00` : iso);
   return `${d.getMonth() + 1}/${d.getDate()}`;
 };
 export const fmtDateTime = (iso: string) => {

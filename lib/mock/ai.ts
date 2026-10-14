@@ -50,7 +50,7 @@ export const aiScenarios: AiScenario[] = [
           { id: "ctx-doc-sap-spec", label: "SAP 명세서" },
           { id: "cf-3", label: "충돌 cf-3" },
         ],
-        action: { label: "v4 로 적용", effect: "version:ctx-req-spec" },
+        action: { label: "v4 draft 로 적용", effect: "version:ctx-req-spec" },
       },
     ],
   },
@@ -119,7 +119,7 @@ export const aiScenarios: AiScenario[] = [
     ],
   },
   {
-    route: "/ops/contracts",
+    route: "/knowledge/contracts",
     suggestions: ["변경 계약 초안에 일정·대금 조항 보완해줘", "60일 안에 만료되거나 갱신 협의가 필요한 문서", "이번 주 고객에게 보내야 할 서류"],
     turns: [
       { role: "user", text: "변경 계약 초안에 일정·대금 조항 보완해줘" },
@@ -132,7 +132,7 @@ export const aiScenarios: AiScenario[] = [
           { id: "risk-noresp", label: "리스크: 미응답" },
         ],
         action: {
-          label: "v2 로 적용",
+          label: "v2 draft 로 적용",
           effect: "version:ct-hanbit-cr1",
           payload: {
             summary: "AI 보완 — §3 일정(인수 12/19, 주 단위 순연) · §4 대금(50/50) 추가",
